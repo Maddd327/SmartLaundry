@@ -8,3 +8,5 @@ backups/
 *.dump
 node_modules/
 tests/.e2e-state.json
+# Clone lokal untuk demo Docker berada di dalam folder kerja ini.
+SmartLaundry/
