@@ -37,8 +37,10 @@ Lingkungan uji lokal: Nginx pada `127.0.0.1:18080` dan `127.0.0.1:18081`, dua Fl
 | `npm run test:browser:quality` | Lulus: Chromium, Firefox, WebKit pada 320/375/768/1440 px; tidak ada overflow atau galat JS; label, keyboard, fokus, loading, kosong, error/retry |
 | `npm run test:browser:failover` setelah A dihentikan | Lulus: POS membuat/membaca order dan endpoint lacak publik menjawab melalui B; header `X-Instance-ID: order-api-b` |
 | `docker compose config --quiet` | Lulus |
+| `docker compose up --build -d` pada clone demo | Lulus: `db`, `catalog-api`, `order-api-a`, `order-api-b`, dan `web` berstatus healthy |
+| Failover container Compose | Lulus: `stop order-api-a` memberi admin `200` dan lacak publik `422` dari B; setelah `start order-api-a`, admin `200` dari A |
 
 PDF struk juga dibuat dengan cetak browser Chromium; teks layanan, total Rp58.000, dan status Lunas terbaca dari PDF. Setelah A dijalankan lagi, A membaca tiga order uji yang sama dari PostgreSQL.
 Setelah proses PostgreSQL lokal dihentikan dan dijalankan lagi dengan direktori data yang sama, A dan B masing-masing tetap membaca ketiga order tersebut.
 
-**Batas pengujian:** Docker daemon menolak akses (`permission denied /var/run/docker.sock`), sehingga stop/start container Compose tidak dapat dijalankan di lingkungan ini; failover dibuktikan dengan menghentikan proses Order API lokal. Dialog cetak fisik dan pengiriman pesan WhatsApp tidak diuji: aplikasi hanya menyiapkan URL chat, dan pelanggan sendiri yang menekan kirim.
+**Batas pengujian:** alur dengan order nyata dan kode lacak valid diuji pada database tes terpisah melalui Nginx/Flask/PostgreSQL lokal. Failover container Compose diuji pada clone demo dengan permintaan baca dan validasi; database demo tidak diisi transaksi uji. Dialog cetak fisik dan pengiriman pesan WhatsApp tidak diuji: aplikasi hanya menyiapkan URL chat, dan pelanggan sendiri yang menekan kirim.

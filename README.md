@@ -70,7 +70,7 @@ X-Instance-ID: order-api-a
 {"orders":[]}
 ```
 
-Endpoint admin lain meliputi `POST /api/services`, `POST /api/customers`, `POST /api/orders`, `PATCH /api/orders/{id}/status`, `POST /api/orders/{id}/payments`, `GET /api/orders/{id}/receipt`, dan `GET /api/reports/summary?from=YYYY-MM-DD&to=YYYY-MM-DD`. `GET /api/track?code=<UUID>` di port publik hanya mengembalikan kode, status, perkiraan selesai, dan waktu pembaruan; tidak mengembalikan nama, nomor WhatsApp, rincian, atau pembayaran. Galat API berbentuk JSON seperti `{"error":"Pelanggan tidak ditemukan."}` dengan status HTTP yang sesuai. Rincian kontrak ada di [panduan backend](backend/README.md). Port publik menolak POS dan seluruh API transaksi; `GET /api/services` hanya memberi layanan aktif.
+Endpoint admin lain meliputi `POST /api/services`, `POST /api/customers`, `POST /api/orders`, `PATCH /api/orders/{id}/status`, `POST /api/orders/{id}/payments`, `GET /api/orders/{id}/receipt`, dan `GET /api/reports/summary?from=YYYY-MM-DD&to=YYYY-MM-DD`. `GET /api/track?code=<UUID>` di port publik hanya mengembalikan kode, status, perkiraan selesai, dan waktu pembaruan; tidak mengembalikan nama, nomor WhatsApp, rincian, atau pembayaran. Galat API berbentuk JSON seperti `{"error":"Pelanggan tidak ditemukan."}` dengan status HTTP yang sesuai. Rincian kontrak ada di [panduan backend](backend/README.md). Port publik menolak POS dan API pengelola; `GET /api/services` hanya memberi layanan aktif.
 
 ## Demo maintenance dan failover
 
