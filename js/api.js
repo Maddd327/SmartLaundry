@@ -1,5 +1,5 @@
 // Kedua halaman memanggil path relatif. Port publik hanya membuka GET katalog
-// aktif dan status order via kode; port admin mem-proxy seluruh API pengelola.
+// aktif, permintaan baru, dan status via kode; port admin mem-proxy API pengelola.
 export const CATALOG_API = '';
 export const ORDER_API = '';
 

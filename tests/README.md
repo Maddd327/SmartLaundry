@@ -14,15 +14,16 @@ node tests/whatsapp.mjs
 npm run test:browser:public
 E2E_ALLOW_WRITES=1 npm run test:browser:admin
 npm run test:browser:tracking
+E2E_ALLOW_WRITES=1 npm run test:browser:request
 npm run test:browser:quality
 # Hentikan Order API A pada stack uji, misalnya: docker compose stop order-api-a
 E2E_ALLOW_WRITES=1 npm run test:browser:failover
 # Jalankan kembali A, lalu periksa order yang dibuat B tetap terbaca.
 ```
 
-Tes PostgreSQL dengan URL tes serta migrasi dijelaskan di [backend/README.md](../backend/README.md). Skrip browser admin membuat dua order uji, satu pelanggan, satu layanan, dan satu pengeluaran. Skrip tracking membaca kode dari order uji itu melalui port publik tanpa membuat transaksi. Skrip failover membuat satu order tambahan. File `tests/.e2e-state.json` berisi ID uji dan diabaikan Git.
+Tes PostgreSQL dengan URL tes serta migrasi dijelaskan di [backend/README.md](../backend/README.md). Skrip browser admin membuat dua order uji, satu pelanggan, satu layanan, dan satu pengeluaran. Skrip tracking membaca kode dari order uji itu. Skrip `browser_request` menyimpan permintaan pelanggan dari website dan memeriksa bahwa pelanggan/order terlihat di POS, status awal menunggu konfirmasi, kode lacak muncul, serta WhatsApp berisi pesan siap kirim. Skrip failover membuat satu order tambahan. File `tests/.e2e-state.json` berisi ID uji dan diabaikan Git.
 
-## Hasil pemeriksaan 18 Oktober 2026
+## Hasil pemeriksaan 18 Oktober 2026 (tahap sebelum permintaan publik)
 
 Lingkungan uji lokal: Nginx pada `127.0.0.1:18080` dan `127.0.0.1:18081`, dua Flask Order API, Catalog API, PostgreSQL database `laundry_test`, Playwright 1.64.1.
 
@@ -31,7 +32,7 @@ Lingkungan uji lokal: Nginx pada `127.0.0.1:18080` dan `127.0.0.1:18081`, dua Fl
 | `python -m pytest -q tests` dengan tiga URL database tes | Lulus, 12 tes; termasuk privasi dan pembaruan status pelacakan publik |
 | `node tests/whatsapp.mjs` | Lulus: normalisasi nomor dan encoding pesan |
 | `python3 scripts/check_gateway.py --public http://127.0.0.1:18080 --admin http://127.0.0.1:18081` | Lulus: port publik menolak POS dan API transaksi |
-| `npm run test:browser:public` | Lulus: tiga layanan/harga API; kg dan item; URL WhatsApp; nol order dibuat |
+| `npm run test:browser:public` | Lulus pada versi sebelumnya: tiga layanan/harga API; kg dan item; URL WhatsApp; nol order dibuat |
 | `npm run test:browser:admin` | Lulus: katalog, pelanggan, dua item/order, DP/lunas, status, struk, pengeluaran/laporan, idempotensi |
 | `npm run test:browser:tracking` | Lulus: kode dari POS/struk menampilkan status database di Chromium, Firefox, WebKit pada 320/768/1440 px |
 | `npm run test:browser:quality` | Lulus: Chromium, Firefox, WebKit pada 320/375/768/1440 px; tidak ada overflow atau galat JS; label, keyboard, fokus, loading, kosong, error/retry |

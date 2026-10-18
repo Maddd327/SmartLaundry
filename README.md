@@ -9,7 +9,7 @@ flowchart LR
   P[Browser pelanggan<br/>port 8080] --> N[Nginx / web]
   A[Browser admin lokal<br/>127.0.0.1:8081] --> N
   N -->|GET layanan aktif| C[Catalog API]
-  N -->|GET status dengan kode lacak| OA
+  N -->|POST permintaan dan GET status| OA
   N -->|kelola katalog, hanya admin| C
   N -->|transaksi, A utama| OA[Order API A]
   N -.->|cadangan saat A gagal| OB[Order API B]
@@ -26,6 +26,7 @@ flowchart LR
 | `catalog-api` | Flask pemilik tabel `catalog.services`; hanya layanan aktif dapat dibaca dari port publik. |
 | `order-api-a`, `order-api-b` | Dua instance Flask dari image yang sama, pemilik tabel `ordering.customers`, `orders`, `order_items`, `payments`, dan `expenses`. Laporan dihitung dari data tersebut; endpoint lacak publik hanya mengembalikan status dan perkiraan selesai. |
 | `db` | Satu PostgreSQL untuk kedua service, dengan volume `pgdata`. Infrastruktur database masih bersama dan belum memiliki failover. |
+| `db-migrate` | Job sekali jalan pada Compose: menerapkan SQL berulang ke volume lama maupun baru, lalu berhenti. |
 
 API dan database tidak menerbitkan port host. Nginx mengikat port admin hanya ke `127.0.0.1`; menyembunyikan tombol UI saja bukan pembatas akses.
 
@@ -39,7 +40,7 @@ docker compose up --build -d
 docker compose ps
 ```
 
-`.env` berizin hanya untuk pemilik dan diabaikan Git serta build Docker. Simpan salinannya secara privat untuk pemulihan. Pada volume database **lama** yang skema atau password role-nya perlu diperbarui, jalankan migrasi ulang sesuai [panduan backend](backend/README.md); seed tidak menimpa transaksi.
+`.env` berizin hanya untuk pemilik dan diabaikan Git serta build Docker. Simpan salinannya secara privat untuk pemulihan. Job `db-migrate` menerapkan perubahan skema pada volume lama saat Compose dijalankan; seed tidak menimpa transaksi.
 
 | Halaman | URL pada mesin host |
 | --- | --- |
@@ -50,7 +51,7 @@ Pengelola dari komputer lain perlu jaringan privat atau SSH tunnel ke port admin
 
 ## Alur pelanggan dan transaksi
 
-Website publik membaca tiga layanan awal beserta harga acuan dari `GET /api/services`. Form menghitung estimasi di browser, menormalisasi nomor, lalu membuka `wa.me/628213194417` dengan pesan yang sudah di-encode. **Pelanggan sendiri menekan kirim di WhatsApp**; membuka chat tidak berarti pesan terkirim atau order diterima. Harga dan jadwal akhir dikonfirmasi outlet. Form publik tidak melakukan POST order atau menyimpan data. Setelah konfirmasi WhatsApp, pengelola mencatat pelanggan dan order melalui POS; Order API menghitung ulang harga, menyimpan semua item dalam satu transaksi, dan memakai `client_order_id` untuk mencegah order ganda. ID UUID order menjadi **kode lacak** yang tampil di ringkasan POS dan struk. Pengelola memberikan kode itu kepada pelanggan; pelanggan memasukkannya pada bagian **Lacak Order** di website publik untuk melihat status dan perkiraan selesai. Kode belum tersedia hanya karena chat WhatsApp dibuka. Pembayaran, status, struk, pengeluaran, dan laporan dibaca dari database.
+Website publik membaca layanan aktif dan harga acuan dari `GET /api/services`. Pelanggan mengisi form, memeriksa rincian, lalu menekan **Simpan permintaan**. Browser memanggil `POST /api/requests`; Order API menormalisasi nomor, menghitung ulang harga dari Catalog API, serta menyimpan pelanggan, permintaan, dan item dalam satu transaksi. Server mengembalikan kode lacak UUID. Status awal **Menunggu konfirmasi**; pengelola melihatnya di POS dan mengubah status ke **Antre** setelah memeriksa rincian. Pembayaran baru dapat dicatat setelah konfirmasi. `client_request_id` mencegah retry membuat permintaan ganda. Pelanggan dapat membuka WhatsApp dengan rincian dan kode yang sudah terisi, tetapi **tetap harus menekan Kirim sendiri**. Menyimpan permintaan tidak membuktikan chat terkirim atau laundry diterima outlet. Harga serta jadwal akhir tetap perlu dikonfirmasi. Kode dapat dipakai di bagian **Lacak Order** untuk melihat status. POS juga dapat mencatat order langsung melalui `POST /api/orders`.
 
 ## Contoh API
 
@@ -70,7 +71,7 @@ X-Instance-ID: order-api-a
 {"orders":[]}
 ```
 
-Endpoint admin lain meliputi `POST /api/services`, `POST /api/customers`, `POST /api/orders`, `PATCH /api/orders/{id}/status`, `POST /api/orders/{id}/payments`, `GET /api/orders/{id}/receipt`, dan `GET /api/reports/summary?from=YYYY-MM-DD&to=YYYY-MM-DD`. `GET /api/track?code=<UUID>` di port publik hanya mengembalikan kode, status, perkiraan selesai, dan waktu pembaruan; tidak mengembalikan nama, nomor WhatsApp, rincian, atau pembayaran. Galat API berbentuk JSON seperti `{"error":"Pelanggan tidak ditemukan."}` dengan status HTTP yang sesuai. Rincian kontrak ada di [panduan backend](backend/README.md). Port publik menolak POS dan API pengelola; `GET /api/services` hanya memberi layanan aktif.
+Endpoint admin lain meliputi `POST /api/services`, `POST /api/customers`, `POST /api/orders`, `PATCH /api/orders/{id}/status`, `POST /api/orders/{id}/payments`, `GET /api/orders/{id}/receipt`, dan `GET /api/reports/summary?from=YYYY-MM-DD&to=YYYY-MM-DD`. `GET /api/track?code=<UUID>` di port publik hanya mengembalikan kode, status, perkiraan selesai, dan waktu pembaruan; tidak mengembalikan nama, nomor WhatsApp, rincian, atau pembayaran. Port publik juga mengizinkan **hanya** `POST /api/requests` untuk membuat permintaan menunggu konfirmasi. Galat API berbentuk JSON seperti `{"error":"Pelanggan tidak ditemukan."}` dengan status HTTP yang sesuai. Rincian kontrak ada di [panduan backend](backend/README.md). Port publik menolak POS dan API pengelola; `GET /api/services` hanya memberi layanan aktif.
 
 ## Demo maintenance dan failover
 

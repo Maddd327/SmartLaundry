@@ -82,9 +82,15 @@ document.querySelectorAll('.main-nav a').forEach((link) => link.addEventListener
 }));
 
 const today = new Date();
-const localToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+const jakartaDate = (value) => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit',
+}).format(value);
+const localToday = jakartaDate(today);
 dateInput.min = localToday;
 dateInput.value = localToday;
+const maxDate = new Date(`${localToday}T12:00:00+07:00`);
+maxDate.setUTCDate(maxDate.getUTCDate() + 60);
+dateInput.max = jakartaDate(maxDate);
 
 function parsedQuantity() {
   const raw = quantityInput.value.trim();
@@ -124,6 +130,26 @@ function showError(message, field) {
   field?.focus();
 }
 
+const reviewDialog = $('#review-dialog');
+let pendingRequest = null;
+function reviewState(message, isError = false) {
+  const element = $('#review-state');
+  element.hidden = !message;
+  element.className = isError ? 'api-state error' : 'api-state';
+  element.textContent = message;
+}
+function addReviewRow(label, value) {
+  const row = document.createElement('div');
+  const name = document.createElement('span');
+  const content = document.createElement('strong');
+  name.textContent = label;
+  content.textContent = value;
+  row.append(name, content);
+  $('#review-details').append(row);
+}
+$('#review-close').addEventListener('click', () => reviewDialog.close());
+$('#review-back').addEventListener('click', () => reviewDialog.close());
+
 bookingForm.addEventListener('submit', (event) => {
   event.preventDefault();
   error.hidden = true;
@@ -138,22 +164,71 @@ bookingForm.addEventListener('submit', (event) => {
   if (!quantity) return showError(unitSelect.value === 'kg'
     ? 'Jumlah kg harus angka positif dengan maksimal tiga desimal.'
     : 'Jumlah item harus bilangan bulat positif.', quantityInput);
-  if (!dateInput.value || dateInput.value < localToday) return showError('Pilih tanggal hari ini atau sesudahnya.', dateInput);
+  if (!dateInput.value || dateInput.value < localToday || dateInput.value > dateInput.max) return showError('Pilih tanggal hari ini sampai 60 hari ke depan.', dateInput);
   if (!name) return showError('Isi nama Anda.', $('#customer-name'));
+  if (name.length > 120) return showError('Nama maksimal 120 karakter.', $('#customer-name'));
   if (!normalizedPhone) return showError('Masukkan nomor WhatsApp Indonesia yang valid, misalnya 081234567890.', $('#phone'));
+  if (notes.length > 1000) return showError('Catatan maksimal 1000 karakter.', $('#notes'));
   const estimate = Math.round(quantity * (unitSelect.value === 'kg' ? service.price_kg : service.price_item));
-  const message = [
-    'Halo Laundry Mr Andy, saya ingin menanyakan pesanan laundry:', '',
-    `Nama: ${name}`, `Nomor WhatsApp: ${normalizedPhone}`, `Layanan: ${service.name}`,
-    `Perhitungan: ${unitSelect.value === 'kg' ? 'Kilogram (kg)' : 'Satuan (item)'}`,
-    `Jumlah: ${quantity.toLocaleString('id-ID')} ${unitSelect.value}`,
-    `Tanggal yang diinginkan: ${tanggalInput(dateInput.value)}`,
-    `Estimasi pengerjaan: ${durasi(service.duration_minutes)}`,
-    `Harga acuan: ${rupiah(unitSelect.value === 'kg' ? service.price_kg : service.price_item)} per ${unitSelect.value}`,
-    `Estimasi harga acuan: ${rupiah(estimate)}`, `Catatan: ${notes || '-'}`, '',
-    'Mohon konfirmasi harga akhir, jadwal, dan cara pembayarannya. Terima kasih.',
-  ].join('\n');
-  window.open(whatsappLink(message), '_blank', 'noopener,noreferrer');
+  pendingRequest = {
+    client_request_id: crypto.randomUUID(), name, whatsapp: normalizedPhone,
+    service_id: service.id, unit: unitSelect.value, quantity,
+    requested_date: dateInput.value, note: notes,
+  };
+  $('#review-details').replaceChildren();
+  addReviewRow('Nama', name);
+  addReviewRow('WhatsApp', normalizedPhone);
+  addReviewRow('Layanan', service.name);
+  addReviewRow('Jumlah', `${quantity.toLocaleString('id-ID')} ${unitSelect.value}`);
+  addReviewRow('Tanggal yang diinginkan', tanggalInput(dateInput.value));
+  addReviewRow('Estimasi harga acuan', rupiah(estimate));
+  addReviewRow('Catatan', notes || '—');
+  reviewState('');
+  reviewDialog.showModal();
+  $('#review-confirm').focus();
+});
+
+$('#review-confirm').addEventListener('click', async () => {
+  if (!pendingRequest) return;
+  const button = $('#review-confirm');
+  button.disabled = true;
+  $('#review-back').disabled = true;
+  reviewState('Menyimpan permintaan dan membuat kode lacak…');
+  try {
+    const { request: saved } = await orderRequest('/api/requests', {
+      method: 'POST', body: JSON.stringify(pendingRequest),
+    });
+    const service = services.find((item) => item.id === pendingRequest.service_id);
+    const message = [
+      'Halo Laundry Mr Andy, saya sudah mengisi permintaan laundry:', '',
+      `Kode lacak: ${saved.tracking_code}`,
+      `Nama: ${pendingRequest.name}`,
+      `Nomor WhatsApp: ${pendingRequest.whatsapp}`,
+      `Layanan: ${service.name}`,
+      `Perhitungan: ${pendingRequest.unit === 'kg' ? 'Kilogram (kg)' : 'Satuan (item)'}`,
+      `Jumlah: ${pendingRequest.quantity.toLocaleString('id-ID')} ${pendingRequest.unit}`,
+      `Tanggal yang diinginkan: ${tanggalInput(pendingRequest.requested_date)}`,
+      `Estimasi pengerjaan: ${durasi(service.duration_minutes)}`,
+      `Estimasi harga acuan dari server: ${rupiah(saved.estimated_total)}`,
+      `Catatan: ${pendingRequest.note || '-'}`, '',
+      'Mohon konfirmasi harga akhir, jadwal, dan cara pembayarannya. Terima kasih.',
+    ].join('\n');
+    $('#request-code').textContent = saved.tracking_code;
+    $('#request-status').textContent = saved.status_label;
+    $('#request-total').textContent = rupiah(saved.estimated_total);
+    $('#request-whatsapp').href = whatsappLink(message);
+    $('#request-result').hidden = false;
+    $('#tracking-code').value = saved.tracking_code;
+    reviewDialog.close();
+    $('#request-result').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('#request-whatsapp').focus();
+    pendingRequest = null;
+  } catch (requestError) {
+    reviewState(`${requestError.message} Permintaan belum dapat dipastikan tersimpan; coba lagi dengan tombol yang sama.`, true);
+  } finally {
+    button.disabled = false;
+    $('#review-back').disabled = false;
+  }
 });
 
 const trackingForm = $('#tracking-form');

@@ -44,7 +44,10 @@ CREATE TABLE IF NOT EXISTS ordering.orders (
   request_hash CHAR(64) NOT NULL,
   customer_id UUID NOT NULL REFERENCES ordering.customers(id),
   ordered_at TIMESTAMPTZ NOT NULL,
-  status TEXT NOT NULL DEFAULT 'baru' CHECK (status IN ('baru','diproses','selesai','diambil','dibatalkan')),
+  status TEXT NOT NULL DEFAULT 'baru' CHECK (status IN ('menunggu_konfirmasi','baru','diproses','selesai','diambil','dibatalkan')),
+  source TEXT NOT NULL DEFAULT 'pos' CHECK (source IN ('pos','website')),
+  requested_date DATE,
+  request_name TEXT,
   subtotal BIGINT NOT NULL CHECK (subtotal >= 0),
   discount BIGINT NOT NULL DEFAULT 0 CHECK (discount >= 0 AND discount <= subtotal),
   total BIGINT NOT NULL CHECK (total = subtotal - discount),
@@ -54,6 +57,13 @@ CREATE TABLE IF NOT EXISTS ordering.orders (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE ordering.orders ADD COLUMN IF NOT EXISTS note TEXT NOT NULL DEFAULT '';
+-- Migrasi berulang untuk volume PostgreSQL yang sudah berisi transaksi.
+ALTER TABLE ordering.orders ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'pos';
+ALTER TABLE ordering.orders ADD COLUMN IF NOT EXISTS requested_date DATE;
+ALTER TABLE ordering.orders ADD COLUMN IF NOT EXISTS request_name TEXT;
+ALTER TABLE ordering.orders DROP CONSTRAINT IF EXISTS orders_status_check;
+ALTER TABLE ordering.orders ADD CONSTRAINT orders_status_check
+  CHECK (status IN ('menunggu_konfirmasi','baru','diproses','selesai','diambil','dibatalkan'));
 CREATE TABLE IF NOT EXISTS ordering.order_items (
   id UUID PRIMARY KEY,
   order_id UUID NOT NULL REFERENCES ordering.orders(id) ON DELETE CASCADE,

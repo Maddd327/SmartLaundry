@@ -6,7 +6,7 @@ const $ = (selector) => document.querySelector(selector);
 const state = { services: [], customers: [], orders: [], expenses: [], selected: null, receipt: null, lastSavedOrderId: null };
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 const safe = escapeHtml;
-const labels = { baru: 'Antre', diproses: 'Diproses', selesai: 'Siap diambil', diambil: 'Selesai', dibatalkan: 'Dibatalkan', belum_bayar: 'Belum bayar', dp: 'DP', lunas: 'Lunas' };
+const labels = { menunggu_konfirmasi: 'Menunggu konfirmasi', baru: 'Antre', diproses: 'Diproses', selesai: 'Siap diambil', diambil: 'Selesai', dibatalkan: 'Dibatalkan', belum_bayar: 'Belum bayar', dp: 'DP', lunas: 'Lunas' };
 const label = (value) => labels[value] || value || '—';
 const payload = (object) => ({ method: 'POST', body: JSON.stringify(object) });
 const fail = (id, message, retry) => {
@@ -117,10 +117,10 @@ function renderCustomers() {
   if (state.customers.some((item) => item.id === current)) $('#operasional-customer').value = current;
 }
 $('#customer-search').addEventListener('input', renderCustomers);
-async function loadCustomers() {
-  state.customers = []; renderCustomers(); info('#customers-state', 'Memuat pelanggan dari Order API…');
+async function loadCustomers(silent = false) {
+  if (!silent) { state.customers = []; renderCustomers(); info('#customers-state', 'Memuat pelanggan dari Order API…'); }
   try { state.customers = (await orderRequest('/api/customers')).customers; renderCustomers(); info('#customers-state', state.customers.length ? '' : 'Belum ada pelanggan. Tambahkan melalui formulir di atas.'); }
-  catch (error) { fail('#customers-state', error.message, loadCustomers); }
+  catch (error) { fail('#customers-state', error.message, () => loadCustomers()); }
 }
 function resetCustomerForm() {
   $('#customer-form').reset(); $('#customer-edit-id').value = ''; $('#customer-form-title').textContent = 'Tambah pelanggan';
@@ -251,10 +251,10 @@ function renderOrders() {
   if (!$('#receipt-order').value) { state.receipt = null; $('#receipt-paper').innerHTML = ''; $('#print-receipt').disabled = true; info('#receipt-state', 'Pilih order untuk memuat struk.'); }
 }
 $('#order-search').addEventListener('input', renderOrders); $('#order-filter').addEventListener('change', renderOrders);
-async function loadOrders() {
-  state.orders = []; renderOrders(); info('#orders-state', 'Memuat order dari Order API…');
+async function loadOrders(silent = false) {
+  if (!silent) { state.orders = []; renderOrders(); info('#orders-state', 'Memuat order dari Order API…'); }
   try { state.orders = (await orderRequest('/api/orders')).orders; renderOrders(); info('#orders-state', state.orders.length ? '' : 'Belum ada order yang tersimpan.'); }
-  catch (error) { fail('#orders-state', error.message, loadOrders); fail('#receipt-state', error.message, loadOrders); }
+  catch (error) { fail('#orders-state', error.message, () => loadOrders()); fail('#receipt-state', error.message, () => loadOrders()); }
 }
 async function loadDashboard() {
   $('#metric-orders').textContent = '—'; $('#metric-paid').textContent = '—'; $('#metric-expenses').textContent = '—';
@@ -268,15 +268,15 @@ const dialog = $('#order-dialog');
 function detailRow(name, value) { return `<div class="dialog-detail"><span>${safe(name)}</span><span>${safe(value)}</span></div>`; }
 function renderDetail(order) {
   state.selected = order; $('#dialog-id').textContent = `Order ${order.id.slice(0, 8)}`;
-  const details = [['Kode lacak pelanggan', order.id], ['Tanggal masuk', tanggalWaktu(order.ordered_at)], ['Pelanggan', order.customer_name], ['WhatsApp', order.customer_whatsapp], ['Status pengerjaan', label(order.status)], ['Perkiraan selesai', tanggalWaktu(order.expected_completed_at)], ['Catatan', order.note || '—']];
+  const details = [['Kode lacak pelanggan', order.id], ['Sumber', order.source === 'website' ? 'Form website pelanggan' : 'Dicatat pengelola'], ['Tanggal masuk', tanggalWaktu(order.ordered_at)], ['Tanggal yang diinginkan', order.requested_date || '—'], ['Pelanggan', order.customer_name], ['WhatsApp', order.customer_whatsapp], ['Status pengerjaan', label(order.status)], ['Perkiraan selesai', tanggalWaktu(order.expected_completed_at)], ['Catatan', order.note || '—']];
   const items = order.items.map((item) => `${item.service_name} · ${Number(item.quantity).toLocaleString('id-ID')} ${item.unit} × ${rupiah(item.unit_price)} = ${rupiah(item.line_total)}`);
   const payments = order.payments.length ? order.payments.map((payment) => `${tanggal(payment.paid_at)} · ${label(payment.method)} · ${rupiah(payment.amount)}`) : ['Belum ada pembayaran'];
   $('#dialog-body').innerHTML = `<div class="dialog-section"><h3>Rincian order</h3>${details.map(([key, value]) => detailRow(key, value)).join('')}${items.map((item) => detailRow('Item', item)).join('')}${detailRow('Subtotal', rupiah(order.subtotal))}${detailRow('Diskon', rupiah(order.discount))}${detailRow('Total', rupiah(order.total))}</div><div class="dialog-section"><h3>Pembayaran · ${safe(label(order.payment_status))}</h3>${payments.map((item) => detailRow('Tercatat', item)).join('')}${detailRow('Sudah dibayar', rupiah(order.paid_amount))}${detailRow('Sisa', rupiah(order.total - order.paid_amount))}</div>`;
-  $('#dialog-status').value = order.status;
+  $('#dialog-status').value = order.status === 'menunggu_konfirmasi' ? 'baru' : order.status;
   $('#payment-amount').max = order.total - order.paid_amount;
   $('#payment-amount').value = '';
-  $('#payment-submit').disabled = order.total - order.paid_amount <= 0;
-  info('#dialog-state', order.total - order.paid_amount <= 0 ? 'Order ini sudah lunas.' : '');
+  $('#payment-submit').disabled = order.status === 'menunggu_konfirmasi' || order.status === 'dibatalkan' || order.total - order.paid_amount <= 0;
+  info('#dialog-state', order.status === 'menunggu_konfirmasi' ? 'Periksa permintaan, lalu ubah status ke Antre untuk mengonfirmasi. Pembayaran tersedia setelah itu.' : order.total - order.paid_amount <= 0 ? 'Order ini sudah lunas.' : '');
 }
 async function openOrder(id) {
   state.selected = null; $('#dialog-id').textContent = 'Memuat order…'; $('#dialog-body').innerHTML = '';
@@ -355,3 +355,9 @@ $('#print-receipt').addEventListener('click', () => { if (state.receipt) window.
 
 pasangIkon();
 await Promise.all([loadServices(), loadCustomers(), loadOrders(), loadExpenses(), loadReport(), loadDashboard()]);
+setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    loadCustomers(true);
+    loadOrders(true);
+  }
+}, 15000);

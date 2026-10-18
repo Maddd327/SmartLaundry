@@ -8,15 +8,15 @@
 
 ## Compose dan jaringan
 
-Dari akar proyek, jalankan `python3 scripts/setup_env.py` sekali sebelum `docker compose up --build -d`. Tiga password acak disimpan di `.env` lokal dengan izin pemilik saja; Compose meneruskannya melalui environment server. Jangan masukkan `.env` ke Git, image, HTML, atau JavaScript. Lima service yang berjalan ialah `db`, `catalog-api`, `order-api-a`, `order-api-b`, dan `web`. Hanya `web` memiliki pemetaan port host: `8080` publik dan `127.0.0.1:8081` admin. API serta database tetap di jaringan internal Compose. Nginx mengarahkan Order API ke A utama dan B cadangan. `GET /healthz` pada tiap API memeriksa tabel miliknya di database; healthcheck web juga memeriksa katalog publik dan daftar order melalui proxy. Respons Order API berisi `instance_id` dan header `X-Instance-ID` yang diteruskan Nginx. Healthcheck container tidak menggantikan failover pasif Nginx.
+Dari akar proyek, jalankan `python3 scripts/setup_env.py` sekali sebelum `docker compose up --build -d`. Tiga password acak disimpan di `.env` lokal dengan izin pemilik saja; Compose meneruskannya melalui environment server. Jangan masukkan `.env` ke Git, image, HTML, atau JavaScript. Lima service yang terus berjalan ialah `db`, `catalog-api`, `order-api-a`, `order-api-b`, dan `web`; `db-migrate` adalah job sekali jalan. Hanya `web` memiliki pemetaan port host: `8080` publik dan `127.0.0.1:8081` admin. API serta database tetap di jaringan internal Compose. Nginx mengarahkan Order API ke A utama dan B cadangan. `GET /healthz` pada tiap API memeriksa tabel miliknya di database; healthcheck web juga memeriksa katalog publik dan daftar order melalui proxy. Respons Order API berisi `instance_id` dan header `X-Instance-ID` yang diteruskan Nginx. Healthcheck container tidak menggantikan failover pasif Nginx.
 
-Nginx memblokir halaman POS dan API pengelola di port publik. Port publik hanya membuka `GET /api/services` dan `GET /api/track?code=<UUID>`; yang kedua hanya menampilkan status pengerjaan dan perkiraan selesai. Untuk melihat instance yang melayani melalui port admin:
+Nginx memblokir halaman POS dan API pengelola di port publik. Port publik membuka `GET /api/services`, `GET /api/track?code=<UUID>`, dan `POST /api/requests` untuk permintaan baru saja. Pelacakan hanya menampilkan status dan perkiraan selesai. Untuk melihat instance yang melayani melalui port admin:
 
 ```bash
 curl -si http://127.0.0.1:8081/api/orders
 ```
 
-Migrasi `db/001_init.sql` dijalankan otomatis **hanya ketika volume PostgreSQL baru dibuat**. Pada volume yang sudah ada, jalankan ulang migrasi secara eksplisit bila SQL berubah:
+Migrasi `db/001_init.sql` dijalankan ketika volume PostgreSQL baru dibuat, lalu diulang oleh job `db-migrate` saat Compose naik agar volume lama juga diperbarui. Untuk menjalankannya manual:
 
 ```bash
 docker compose exec -T db psql -U postgres -d laundry -v ON_ERROR_STOP=1 < db/001_init.sql
@@ -55,7 +55,8 @@ Semua permintaan tulis memakai `Content-Type: application/json`; nominal adalah 
 | Catalog | `GET /api/services` | Layanan aktif; query `include_inactive=true` hanya melalui admin |
 | Catalog | `POST /api/services`, `PATCH /api/services/{id}` | Kelola layanan dan harga |
 | Order | `GET /healthz` | Kesehatan, `instance_id`, dan header `X-Instance-ID` |
-| Order | `GET /api/track?code=<UUID>` | Lacak status publik tanpa data pribadi; kode diberikan pengelola setelah order dicatat |
+| Order | `GET /api/track?code=<UUID>` | Lacak status publik tanpa data pribadi |
+| Order | `POST /api/requests` | Simpan permintaan pelanggan berstatus `menunggu_konfirmasi`; respons hanya kode, status, dan estimasi |
 | Order | `GET/POST /api/customers`, `PATCH /api/customers/{id}` | Pelanggan |
 | Order | `GET/POST /api/orders`, `GET /api/orders/{id}` | Order dan detail |
 | Order | `PATCH /api/orders/{id}/status` | Status pengerjaan |
@@ -64,9 +65,9 @@ Semua permintaan tulis memakai `Content-Type: application/json`; nominal adalah 
 | Order | `GET/POST /api/expenses` | Pengeluaran |
 | Order | `GET /api/reports/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` | Ringkasan laporan |
 
-`POST /api/orders` wajib memakai `client_order_id` unik per niat membuat order. Pengulangan isi yang sama mengembalikan order lama; isi berbeda dengan ID sama mendapat `409`. Browser tidak mengirim total sebagai sumber kebenaran. Kg boleh pecahan positif maksimal tiga desimal; item harus bilangan bulat positif. Order dan semua item disimpan dalam satu transaksi database. Pembayaran tidak boleh melebihi total. Status `belum_bayar`/`dp`/`lunas` dihitung dari jumlah pembayaran.
+`POST /api/orders` wajib memakai `client_order_id` unik per niat membuat order. `POST /api/requests` memakai `client_request_id` UUID dengan aturan idempotensi serupa. Pengulangan isi yang sama mengembalikan order lama; isi berbeda dengan ID sama mendapat `409`. Browser tidak mengirim total sebagai sumber kebenaran. Kg boleh pecahan positif maksimal tiga desimal; item harus bilangan bulat positif. Order dan semua item disimpan dalam satu transaksi database. Permintaan website harus dikonfirmasi ke status `baru` sebelum pembayaran dicatat; pembayaran tidak boleh melebihi total. Status `belum_bayar`/`dp`/`lunas` dihitung dari jumlah pembayaran.
 
-Label status pengerjaan di POS memakai istilah **Antre → Diproses → Siap diambil → Selesai**. Nilai API lama tetap `baru → diproses → selesai → diambil` agar data yang telah tersimpan tidak perlu diubah.
+Label status pengerjaan di POS memakai istilah **Menunggu konfirmasi → Antre → Diproses → Siap diambil → Selesai**. Nilai API untuk empat tahap terakhir tetap `baru → diproses → selesai → diambil` agar data yang telah tersimpan tidak perlu diubah.
 
 ## Tes integrasi PostgreSQL
 

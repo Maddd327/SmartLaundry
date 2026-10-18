@@ -19,11 +19,12 @@ from backend.order_api.domain import calculate_items, payment_status, quantity_v
 ORDER_STATUSES = {'baru','diproses','selesai','diambil','dibatalkan'}
 PAYMENT_METHODS = {'tunai','transfer','qris'}
 PUBLIC_STATUS_LABELS = {
+    'menunggu_konfirmasi': 'Menunggu konfirmasi',
     'baru': 'Antre', 'diproses': 'Diproses', 'selesai': 'Siap diambil',
     'diambil': 'Selesai', 'dibatalkan': 'Dibatalkan',
 }
 JAKARTA = ZoneInfo('Asia/Jakarta')
-ORDER_SELECT = '''SELECT o.*, c.name AS customer_name,c.whatsapp AS customer_whatsapp,
+ORDER_SELECT = '''SELECT o.*, COALESCE(o.request_name,c.name) AS customer_name,c.whatsapp AS customer_whatsapp,
                    COALESCE(p.paid_amount,0)::BIGINT AS paid_amount,
                    (SELECT string_agg(i.service_name, ', ' ORDER BY i.id) FROM ordering.order_items i WHERE i.order_id=o.id) AS item_summary,
                    (SELECT string_agg(trim(trailing '.' from trim(trailing '0' from i.quantity::text)) || ' ' || i.unit, ', ' ORDER BY i.id) FROM ordering.order_items i WHERE i.order_id=o.id) AS quantity_summary
@@ -106,6 +107,36 @@ def existing_for_key(conn, key, request_hash):
     if existing['request_hash'].strip() != request_hash:
         raise ApiError(409, 'client_order_id sudah dipakai untuk isi order yang berbeda.')
     return existing['id']
+
+
+def normalize_public_request(data):
+    fields(data, {'client_request_id','name','whatsapp','service_id','unit','quantity','requested_date','note'},
+           {'client_request_id','name','whatsapp','service_id','unit','quantity','requested_date'})
+    request_id = uuid_value(data['client_request_id'], 'client_request_id')
+    name = text_value(data['name'], 'Nama pelanggan', 120)
+    phone = whatsapp_value(data['whatsapp'])
+    service_id = text_value(data['service_id'], 'service_id', 120)
+    unit = data['unit']
+    if unit not in ('kg','item'):
+        raise ApiError(422, 'Satuan harus kg atau item.')
+    quantity = quantity_value(data['quantity'], unit)
+    requested_date = date_value(data['requested_date'], 'requested_date')
+    today = datetime.now(JAKARTA).date()
+    if requested_date < today or requested_date > today + timedelta(days=60):
+        raise ApiError(422, 'Tanggal yang diinginkan harus hari ini sampai 60 hari ke depan.')
+    note = text_value(data.get('note',''), 'Catatan order', 1000, allow_empty=True)
+    canonical = {'client_request_id': str(request_id), 'name': name, 'whatsapp': phone,
+                 'service_id': service_id, 'unit': unit, 'quantity': format(quantity.normalize(),'f'),
+                 'requested_date': requested_date.isoformat(), 'note': note}
+    request_hash = hashlib.sha256(json.dumps(canonical, sort_keys=True, separators=(',',':')).encode()).hexdigest()
+    return canonical, request_hash
+
+
+def public_request_json(order):
+    return {'tracking_code': order['id'], 'status': order['status'],
+            'status_label': PUBLIC_STATUS_LABELS[order['status']],
+            'estimated_total': order['total'],
+            'expected_completed_at': order['expected_completed_at']}
 
 
 def create_app():
@@ -198,6 +229,47 @@ def create_app():
         result.headers['Cache-Control'] = 'no-store'
         return result
 
+    @app.post('/api/requests')
+    def create_public_request():
+        canonical, request_hash = normalize_public_request(json_body())
+        key = 'public:' + canonical['client_request_id']
+        # Kunci transaksi membuat retry serentak berhenti sebelum menyentuh pelanggan.
+        with database() as conn:
+            conn.execute('SELECT pg_advisory_xact_lock(hashtext(%s))', (key,))
+            existing_id = existing_for_key(conn, key, request_hash)
+            if existing_id:
+                result = jsonify(request=public_request_json(get_order(conn, existing_id)), idempotent_replay=True)
+                result.headers['Cache-Control'] = 'no-store'
+                return result, 200
+            catalog_services = fetch_services()
+            items, subtotal, duration_minutes = calculate_items([{
+                'service_id': canonical['service_id'], 'unit': canonical['unit'],
+                'quantity': canonical['quantity'],
+            }], catalog_services)
+            customer = conn.execute('''INSERT INTO ordering.customers(id,name,whatsapp)
+                VALUES (%s,%s,%s) ON CONFLICT (whatsapp) DO UPDATE
+                SET whatsapp=EXCLUDED.whatsapp RETURNING id''',
+                (uuid4(), canonical['name'], canonical['whatsapp'])).fetchone()
+            ordered_at = datetime.now(timezone.utc)
+            requested_at = datetime.combine(date.fromisoformat(canonical['requested_date']), time(9), JAKARTA)
+            expected_start = max(ordered_at, requested_at)
+            order_id = uuid4()
+            conn.execute('''INSERT INTO ordering.orders
+                (id,client_order_id,request_hash,customer_id,ordered_at,status,source,requested_date,request_name,
+                 subtotal,discount,total,expected_completed_at,note)
+                VALUES (%s,%s,%s,%s,%s,'menunggu_konfirmasi','website',%s,%s,%s,0,%s,%s,%s)''',
+                (order_id,key,request_hash,customer['id'],ordered_at,canonical['requested_date'],canonical['name'],
+                 subtotal,subtotal,expected_start+timedelta(minutes=duration_minutes),canonical['note']))
+            for item in items:
+                conn.execute('''INSERT INTO ordering.order_items
+                    (id,order_id,service_id,service_name,unit_price,unit,quantity,line_total)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)''',
+                    (uuid4(),order_id,item['service_id'],item['service_name'],item['unit_price'],
+                     item['unit'],item['quantity'],item['line_total']))
+            result = jsonify(request=public_request_json(get_order(conn, order_id)), idempotent_replay=False)
+        result.headers['Cache-Control'] = 'no-store'
+        return result, 201
+
     @app.post('/api/orders')
     def create_order():
         canonical, request_hash, ordered_at = normalize_order_request(json_body())
@@ -249,10 +321,12 @@ def create_app():
         if status not in ORDER_STATUSES:
             raise ApiError(422, 'Status harus baru, diproses, selesai, diambil, atau dibatalkan.')
         with database() as conn:
-            row = conn.execute('UPDATE ordering.orders SET status=%s,updated_at=now() WHERE id=%s RETURNING id',
-                               (status,order_id)).fetchone()
-            if row is None:
+            current = conn.execute('SELECT status FROM ordering.orders WHERE id=%s FOR UPDATE', (order_id,)).fetchone()
+            if current is None:
                 raise ApiError(404, 'Order tidak ditemukan.')
+            if current['status'] == 'menunggu_konfirmasi' and status not in ('baru','dibatalkan'):
+                raise ApiError(422, 'Konfirmasi permintaan dahulu dengan status Antre, atau batalkan.')
+            conn.execute('UPDATE ordering.orders SET status=%s,updated_at=now() WHERE id=%s', (status,order_id))
             result = get_order(conn, order_id)
         return jsonify(order=result)
 
@@ -269,9 +343,11 @@ def create_app():
         if paid_at > datetime.now(timezone.utc) + timedelta(minutes=5):
             raise ApiError(422, 'Tanggal pembayaran tidak boleh di masa depan.')
         with database() as conn:
-            order = conn.execute('SELECT id,total FROM ordering.orders WHERE id=%s FOR UPDATE', (order_id,)).fetchone()
+            order = conn.execute('SELECT id,total,status FROM ordering.orders WHERE id=%s FOR UPDATE', (order_id,)).fetchone()
             if order is None:
                 raise ApiError(404, 'Order tidak ditemukan.')
+            if order['status'] in ('menunggu_konfirmasi','dibatalkan'):
+                raise ApiError(422, 'Konfirmasi permintaan dahulu sebelum mencatat pembayaran.')
             paid = conn.execute('SELECT COALESCE(SUM(amount),0)::BIGINT AS amount FROM ordering.payments WHERE order_id=%s',
                                 (order_id,)).fetchone()['amount']
             if paid + amount > order['total']:

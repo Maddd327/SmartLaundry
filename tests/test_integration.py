@@ -152,6 +152,56 @@ def test_public_tracking_shows_only_status_after_admin_records_order(api):
     assert (refreshed['status'], refreshed['status_label']) == ('selesai', 'Siap diambil')
 
 
+def test_public_request_creates_pending_customer_order_and_tracking(api):
+    _, client, _ = api
+    body = {'client_request_id': str(uuid4()), 'name': 'Ani Website',
+            'whatsapp': '+62 812-3456-7890', 'service_id': 'regular',
+            'unit': 'kg', 'quantity': '2.5',
+            'requested_date': datetime.now(ZoneInfo('Asia/Jakarta')).date().isoformat(),
+            'note': 'Pisahkan warna'}
+    first = client.post('/api/requests', json={**body, 'estimated_total': 1})
+    assert first.status_code == 400
+    first = client.post('/api/requests', json=body)
+    assert first.status_code == 201, first.json
+    code = first.json['request']['tracking_code']
+    assert first.json['request']['estimated_total'] == 15000
+    assert first.json['request']['status'] == 'menunggu_konfirmasi'
+    assert set(first.json['request']) == {'tracking_code','status','status_label','estimated_total','expected_completed_at'}
+    assert 'whatsapp' not in first.get_data(as_text=True)
+    assert client.get(f'/api/track?code={code}').json['tracking']['status_label'] == 'Menunggu konfirmasi'
+    saved = client.get(f'/api/orders/{code}').json['order']
+    assert saved['source'] == 'website' and saved['customer_name'] == 'Ani Website'
+    assert saved['items'][0]['unit_price'] == 6000
+    assert saved['items'][0]['line_total'] == 15000
+    assert len(client.get('/api/customers').json['customers']) == 1
+    assert client.post(f'/api/orders/{code}/payments', json={'amount':1000,'method':'tunai'}).status_code == 422
+    assert client.patch(f'/api/orders/{code}/status', json={'status':'diproses'}).status_code == 422
+    assert client.patch(f'/api/orders/{code}/status', json={'status':'baru'}).status_code == 200
+    assert client.post(f'/api/orders/{code}/payments', json={'amount':5000,'method':'tunai'}).json['order']['payment_status'] == 'dp'
+
+
+def test_public_request_retry_conflict_and_shared_phone(api):
+    _, client, app = api
+    body = {'client_request_id': str(uuid4()), 'name': 'Budi', 'whatsapp': '081234567890',
+            'service_id': 'iron', 'unit': 'item', 'quantity': 2,
+            'requested_date': datetime.now(ZoneInfo('Asia/Jakarta')).date().isoformat()}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        def send(_):
+            with app.test_client() as concurrent_client:
+                result = concurrent_client.post('/api/requests', json=body)
+                return result.status_code, result.json['request']['tracking_code']
+        results = list(pool.map(send, range(2)))
+    assert sorted(code for code,_ in results) == [200,201]
+    assert results[0][1] == results[1][1]
+    assert client.post('/api/requests', json={**body,'quantity':3}).status_code == 409
+    second = client.post('/api/requests', json={**body,'client_request_id':str(uuid4()),'name':'Nama Baru'})
+    assert second.status_code == 201
+    assert second.json['request']['tracking_code'] != results[0][1]
+    assert len(client.get('/api/customers').json['customers']) == 1
+    assert len(client.get('/api/orders').json['orders']) == 2
+    assert client.get(f"/api/orders/{second.json['request']['tracking_code']}").json['order']['customer_name'] == 'Nama Baru'
+
+
 def test_client_order_id_prevents_duplicate_even_concurrently(api):
     _, client, app = api
     customer_id = new_customer(client)

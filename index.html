@@ -286,11 +286,11 @@
             <div class="order-points">
               <div><span>01</span>Pilih layanan dan satuan</div>
               <div><span>02</span>Lihat estimasi harga</div>
-              <div><span>03</span>Kirim pesan di WhatsApp</div>
+              <div><span>03</span>Periksa, simpan, lalu hubungi via WhatsApp</div>
             </div>
             <div class="aside-disclaimer">
-              Form ini tidak menyimpan order dan tidak mengirim WhatsApp secara
-              otomatis.
+              Setelah Anda mengonfirmasi rincian, permintaan masuk ke panel pengelola
+              dengan status menunggu konfirmasi. Pesan WhatsApp tetap Anda kirim sendiri.
             </div>
             <div class="order-help">
               <span data-icon="shirt" aria-hidden="true"></span
@@ -386,16 +386,33 @@
               </div>
               <p class="form-warning" id="form-error" role="alert" hidden></p>
               <button type="submit" class="button button-full">
-                Lanjutkan ke WhatsApp <span aria-hidden="true">↗</span>
+                Periksa rincian pesanan <span aria-hidden="true">↗</span>
               </button>
               <p class="form-disclaimer">
                 Harga dan jadwal akhir perlu dikonfirmasi outlet. Anda sendiri
                 yang menekan tombol kirim di WhatsApp.
               </p>
             </form>
+            <div id="request-result" class="request-result" role="status" aria-live="polite" hidden>
+              <span class="section-kicker">Permintaan tersimpan</span>
+              <h3>Kode lacak Anda</h3>
+              <strong id="request-code"></strong>
+              <p>Status: <b id="request-status">Menunggu konfirmasi</b>. Simpan kode ini untuk melihat progres. Pengelola akan memeriksa rincian dan mengonfirmasi harga serta jadwal.</p>
+              <p>Estimasi dari server: <b id="request-total"></b></p>
+              <a id="request-whatsapp" class="button button-full" href="#" target="_blank" rel="noopener noreferrer">Buka WhatsApp untuk kirim pesan ↗</a>
+              <small>Chat hanya dibuka dengan pesan siap kirim. Anda tetap perlu menekan Kirim di WhatsApp.</small>
+            </div>
           </div>
         </div>
       </section>
+
+      <dialog id="review-dialog" class="review-dialog" aria-labelledby="review-title">
+        <div class="review-head"><h2 id="review-title">Periksa rincian permintaan</h2><button type="button" id="review-close" aria-label="Tutup pemeriksaan">×</button></div>
+        <div id="review-details" class="review-details"></div>
+        <p>Setelah disimpan, permintaan tampil di panel pengelola dengan status menunggu konfirmasi. Harga dan jadwal akhir dikonfirmasi oleh outlet.</p>
+        <div id="review-state" class="api-state" role="status" aria-live="polite" hidden></div>
+        <div class="review-actions"><button type="button" id="review-back" class="button button-outline">Ubah rincian</button><button type="button" id="review-confirm" class="button">Simpan permintaan &amp; lihat kode</button></div>
+      </dialog>
 
       <section class="tracking-section section-pad" id="lacak">
         <div class="container tracking-grid">
@@ -407,8 +424,8 @@
               status pengerjaan dan perkiraan selesai terbaru.
             </p>
             <p class="tracking-note">
-              Kode baru tersedia setelah pengelola mencatat order. Mengirim pesan
-              WhatsApp dari form pemesanan belum membuat kode lacak.
+              Kode muncul setelah Anda memeriksa dan menyimpan permintaan pada form.
+              Status awalnya menunggu konfirmasi pengelola.
             </p>
           </div>
           <div class="tracking-card">
@@ -495,8 +512,8 @@
                 Kapan saya mendapat kode untuk melacak cucian?<span aria-hidden="true">+</span>
               </summary>
               <p>
-                Pengelola memberi kode setelah order dicatat dan dikonfirmasi.
-                Masukkan kode tersebut di bagian Lacak Order untuk melihat status.
+                Kode muncul setelah permintaan berhasil disimpan dari form.
+                Masukkan kode tersebut di bagian Lacak Order; status awalnya menunggu konfirmasi.
               </p>
             </details>
           </div>
