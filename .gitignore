@@ -1,0 +1,10 @@
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+.env
+.env.*
+backups/
+*.dump
+node_modules/
+tests/.e2e-state.json

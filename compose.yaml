@@ -1,0 +1,104 @@
+x-api-build: &api-build
+  context: .
+  dockerfile: Dockerfile.api
+
+x-order-common: &order-common
+  build: *api-build
+  image: smartloundry-api:local
+  command: python -m backend.order_api.app
+  environment: &order-env
+    DATABASE_URL: postgresql://order_app@db:5432/laundry
+    PGPASSWORD: ${ORDER_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+    CATALOG_API_URL: http://catalog-api:5001
+    HOST: 0.0.0.0
+    PORT: 5002
+  depends_on: &order-dependencies
+    db:
+      condition: service_healthy
+    catalog-api:
+      condition: service_healthy
+  healthcheck: &order-health
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5002/healthz', timeout=2)"]
+    interval: 5s
+    timeout: 3s
+    retries: 6
+    start_period: 10s
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: laundry
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+      CATALOG_DB_PASSWORD: ${CATALOG_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+      ORDER_DB_PASSWORD: ${ORDER_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d laundry"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  catalog-api:
+    build: *api-build
+    image: smartloundry-api:local
+    command: python -m backend.catalog_api.app
+    environment:
+      DATABASE_URL: postgresql://catalog_app@db:5432/laundry
+      PGPASSWORD: ${CATALOG_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+      HOST: 0.0.0.0
+      PORT: 5001
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5001/healthz', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+
+  order-api-a:
+    <<: *order-common
+    environment:
+      <<: *order-env
+      INSTANCE_ID: order-api-a
+
+  order-api-b:
+    <<: *order-common
+    environment:
+      <<: *order-env
+      INSTANCE_ID: order-api-b
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: smartloundry-web:local
+    ports:
+      - "8080:80"
+      - "127.0.0.1:8081:81"
+    depends_on:
+      catalog-api:
+        condition: service_healthy
+      order-api-a:
+        condition: service_healthy
+      order-api-b:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ && wget -q -O /dev/null http://127.0.0.1:80/api/services && wget -q -O /dev/null http://127.0.0.1:81/api/orders"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  pgdata:

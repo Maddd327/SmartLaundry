@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#edf5f8" />
+    <meta
+      name="description"
+      content="Panel operasional Laundry Mr Andy terhubung ke Catalog API dan Order API."
+    />
+    <title>Panel Operasional — Laundry Mr Andy</title>
+    <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="module" src="js/operasional.js"></script>
+  </head>
+  <body class="operasional-page">
+    <div class="operasional-shell">
+      <aside
+        class="operasional-sidebar"
+        aria-label="Navigasi panel operasional"
+      >
+        <a class="brand operasional-brand" href="index.html"
+          ><span>Laundry<strong>Mr Andy.</strong></span></a
+        >
+        <div class="sidebar-label">MENU UTAMA</div>
+        <nav class="operasional-nav" aria-label="Halaman operasional">
+          <a href="#dashboard" data-view="dashboard"
+            ><span data-icon="layout-dashboard" aria-hidden="true"></span>
+            Dashboard</a
+          >
+          <a href="#services" data-view="services"
+            ><span data-icon="tags" aria-hidden="true"></span> Layanan &
+            harga</a
+          >
+          <a href="#customers" data-view="customers"
+            ><span data-icon="users-round" aria-hidden="true"></span>
+            Pelanggan</a
+          >
+          <a href="#new-order" data-view="new-order"
+            ><span data-icon="clipboard-plus" aria-hidden="true"></span> Buat
+            order</a
+          >
+          <a href="#orders" data-view="orders"
+            ><span data-icon="clipboard-list" aria-hidden="true"></span> Riwayat
+            order</a
+          >
+          <a href="#expenses" data-view="expenses"
+            ><span data-icon="chart-no-axes-combined" aria-hidden="true"></span>
+            Pengeluaran & laporan</a
+          >
+          <a href="#receipt" data-view="receipt"
+            ><span data-icon="receipt" aria-hidden="true"></span> Struk</a
+          >
+        </nav>
+        <div class="sidebar-bottom">
+          <span class="data-pill">DATA DATABASE</span>
+          <p>Order dicatat pengelola setelah pelanggan mengonfirmasi lewat WhatsApp.</p>
+          <a href="index.html">← Kembali ke website</a>
+        </div>
+      </aside>
+
+      <div class="operasional-main">
+        <header class="operasional-topbar">
+          <div class="mobile-operasional-brand">
+            <a class="brand" href="index.html"
+              ><span>Laundry<strong>Mr Andy.</strong></span></a
+            ><span>Panel Operasional</span>
+          </div>
+          <div class="mobile-nav-wrap">
+            <label for="mobile-view" class="sr-only"
+              >Pilih halaman operasional</label
+            ><select id="mobile-view">
+              <option value="dashboard">Dashboard</option>
+              <option value="services">Layanan & harga</option>
+              <option value="customers">Pelanggan</option>
+              <option value="new-order">Buat order</option>
+              <option value="orders">Riwayat order</option>
+              <option value="expenses">Pengeluaran & laporan</option>
+              <option value="receipt">Struk</option>
+            </select>
+          </div>
+          <div class="topbar-right">
+            <span class="topbar-dot"></span><span>Panel terhubung API</span
+            ><a href="index.html" class="topbar-link">Lihat website ↗</a>
+          </div>
+        </header>
+        <main class="operasional-content">
+          <div class="demo-alert">
+            <span
+              class="demo-alert-icon"
+              data-icon="info"
+              aria-hidden="true"
+            ></span>
+            <div>
+              <strong>Order dicatat setelah konfirmasi.</strong> Permintaan dari website publik hanya menyiapkan pesan WhatsApp. Buat order di panel ini setelah detailnya disepakati.
+            </div>
+          </div>
+
+          <section
+            class="operasional-view"
+            id="dashboard"
+            data-page="dashboard"
+          >
+            <div class="page-heading">
+              <div>
+                <div class="operasional-kicker">RINGKASAN</div>
+                <h1>Dashboard</h1>
+                <p>Ringkasan hari ini dan order terbaru dari database.</p>
+              </div>
+              <a class="operasional-button" href="#new-order"
+                >Buat order <span>+</span></a
+              >
+            </div>
+            <div class="welcome-panel">
+              <div>
+                <span class="panel-eyebrow"
+                  >LAUNDRY MR ANDY · PANEL OPERASIONAL</span
+                >
+                <h2>Kelola alur laundry<br />dalam satu tampilan.</h2>
+                <p>
+                  Gunakan menu untuk mengelola layanan, pelanggan, order,
+                  pembayaran, pengeluaran, dan struk.
+                </p>
+                <a href="#orders">Lihat riwayat order <span>→</span></a>
+              </div>
+              <ol class="welcome-flow" aria-label="Alur penggunaan panel">
+                <li><span>01</span> Pilih layanan</li>
+                <li><span>02</span> Periksa order</li>
+                <li><span>03</span> Siapkan struk</li>
+              </ol>
+            </div>
+            <div class="dashboard-grid">
+              <article class="metric-card">
+                <div
+                  class="metric-icon"
+                  data-icon="shopping-bag"
+                  aria-hidden="true"
+                ></div>
+                <span>Order hari ini</span><strong id="metric-orders">—</strong
+                ><small>Semua status</small>
+              </article>
+              <article class="metric-card">
+                <div
+                  class="metric-icon mint"
+                  data-icon="circle-check"
+                  aria-hidden="true"
+                ></div>
+                <span>Pembayaran hari ini</span
+                ><strong id="metric-paid">—</strong
+                ><small>Nominal diterima</small>
+              </article>
+              <article class="metric-card">
+                <div
+                  class="metric-icon peach"
+                  data-icon="wallet"
+                  aria-hidden="true"
+                ></div>
+                <span>Pengeluaran hari ini</span
+                ><strong id="metric-expenses">—</strong
+                ><small>Nominal tercatat</small>
+              </article>
+            </div>
+            <div id="dashboard-state" class="api-state" role="status" aria-live="polite"></div>
+            <div class="operasional-card">
+              <div class="card-heading">
+                <div>
+                  <h2>Order terbaru</h2>
+                  <p>Order terakhir yang tersimpan</p>
+                </div>
+                <a class="plain-link" href="#orders">Lihat semua →</a>
+              </div>
+              <div class="table-wrap">
+                <table class="operasional-table">
+                  <thead>
+                    <tr>
+                      <th>No. order</th>
+                      <th>Pelanggan</th>
+                      <th>Layanan</th>
+                      <th>Jumlah</th>
+                      <th>Status</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboard-orders"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section
+            class="operasional-view"
+            id="services"
+            data-page="services"
+            hidden
+          >
+            <div class="page-heading">
+              <div>
+                <div class="operasional-kicker">KATALOG</div>
+                <h1>Layanan & harga</h1>
+                <p>
+                  Kelola layanan dan harga acuan yang tampil di website.
+                </p>
+              </div>
+            </div>
+            <div class="info-strip">
+              Perubahan layanan langsung tersimpan di Catalog API. Harga order lama tetap memakai snapshot saat order dibuat.
+            </div>
+            <div id="services-state" class="api-state" role="status" aria-live="polite"></div>
+            <div class="operasional-card padded-card management-form">
+              <div class="card-heading"><div><h2 id="service-form-title">Tambah layanan</h2><p>Isi harga dalam rupiah dan durasi dalam menit.</p></div></div>
+              <form id="service-form" novalidate>
+                <input id="service-edit-id" type="hidden" />
+                <div class="operasional-form-grid">
+                  <div class="field"><label for="service-name">Nama layanan</label><input id="service-name" required maxlength="120" /></div>
+                  <div class="field"><label for="service-category">Kategori</label><input id="service-category" required maxlength="80" placeholder="Contoh: cuci-setrika" /></div>
+                  <div class="field full"><label for="service-description">Deskripsi</label><textarea id="service-description" rows="2" maxlength="500"></textarea></div>
+                  <div class="field"><label for="service-price-kg">Harga per kg (Rp)</label><input id="service-price-kg" type="number" min="1" step="1" required /></div>
+                  <div class="field"><label for="service-price-item">Harga per item (Rp)</label><input id="service-price-item" type="number" min="1" step="1" required /></div>
+                  <div class="field"><label for="service-duration">Durasi pengerjaan (menit)</label><input id="service-duration" type="number" min="1" step="1" required /></div>
+                  <fieldset class="field inline-options"><legend>Satuan yang didukung</legend><label><input id="service-unit-kg" type="checkbox" checked /> Kg</label><label><input id="service-unit-item" type="checkbox" checked /> Item</label></fieldset>
+                  <div class="field full checkbox-field"><label><input id="service-active" type="checkbox" checked /> Layanan aktif dan tampil di website</label></div>
+                </div>
+                <p id="service-form-error" class="form-warning" role="alert" hidden></p>
+                <div class="form-actions"><button id="service-submit" class="operasional-button" type="submit">Simpan layanan</button><button id="service-cancel" class="operasional-button-secondary" type="button" hidden>Batal ubah</button></div>
+              </form>
+            </div>
+            <div
+              class="service-operasional-grid"
+              id="operasional-services"
+            ></div>
+            <div class="operasional-card">
+              <div class="card-heading">
+                <div>
+                  <h2>Daftar harga acuan</h2>
+                  <p>Harga saat ini dari Catalog API</p>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="operasional-table">
+                  <thead>
+                    <tr>
+                      <th>Layanan</th>
+                      <th>Per kg</th>
+                      <th>Per item</th>
+                      <th>Estimasi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="operasional-price-rows"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section
+            class="operasional-view"
+            id="customers"
+            data-page="customers"
+            hidden
+          >
+            <div class="page-heading">
+              <div>
+                <div class="operasional-kicker">PELANGGAN</div>
+                <h1>Daftar pelanggan</h1>
+                <p>Pelanggan yang sudah dicatat setelah konfirmasi.</p>
+              </div>
+            </div>
+            <div id="customers-state" class="api-state" role="status" aria-live="polite"></div>
+            <div class="operasional-card padded-card management-form">
+              <div class="card-heading"><div><h2 id="customer-form-title">Tambah pelanggan</h2><p>Nomor WhatsApp akan dinormalisasi oleh server.</p></div></div>
+              <form id="customer-form" novalidate>
+                <input id="customer-edit-id" type="hidden" />
+                <div class="operasional-form-grid">
+                  <div class="field"><label for="customer-name-pos">Nama pelanggan</label><input id="customer-name-pos" autocomplete="name" required maxlength="120" /></div>
+                  <div class="field"><label for="customer-whatsapp">Nomor WhatsApp</label><input id="customer-whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="081234567890" required /></div>
+                  <div class="field full"><label for="customer-contact">Kontak tambahan (opsional)</label><input id="customer-contact" maxlength="200" /></div>
+                </div>
+                <p id="customer-form-error" class="form-warning" role="alert" hidden></p>
+                <div class="form-actions"><button id="customer-submit" class="operasional-button" type="submit">Simpan pelanggan</button><button id="customer-cancel" class="operasional-button-secondary" type="button" hidden>Batal ubah</button></div>
+              </form>
+            </div>
+            <div class="operasional-card">
+              <div class="list-toolbar">
+                <label class="search-field"
+                  ><span data-icon="search" aria-hidden="true"></span
+                  ><span class="sr-only">Cari pelanggan</span
+                  ><input
+                    id="customer-search"
+                    type="search"
+                    placeholder="Cari nama atau nomor" /></label
+                ><span id="customer-count" class="result-count"></span>
+              </div>
+              <div class="table-wrap">
+                <table class="operasional-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nama pelanggan</th>
+                      <th>WhatsApp</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="customer-rows"></tbody>
+                </table>
+              </div>
+              <p class="empty-state" id="customer-empty" hidden>
+                Belum ada pelanggan yang cocok.
+              </p>
+            </div>
+          </section>
+
+          <section
+            class="operasional-view"
+            id="new-order"
+            data-page="new-order"
+            hidden
+          >
+            <div class="page-heading">
+              <div>
+                <div class="operasional-kicker">ORDER BARU</div>
+                <h1>Buat order</h1>
+                <p>
+                  Catat order setelah detail pelanggan dikonfirmasi lewat WhatsApp.
+                </p>
+              </div>
+            </div>
+            <div class="new-order-grid">
+              <div class="operasional-card padded-card">
+                <div class="card-heading">
+                  <div>
+                    <h2>Detail order</h2>
+                    <p>Harga dan total dihitung ulang oleh server saat disimpan.</p>
+                  </div>
+                </div>
+                <form id="operasional-order-form" novalidate>
+                  <input id="client-order-id" type="hidden" />
+                  <div class="operasional-form-grid">
+                    <div class="field full">
+                      <label for="operasional-customer">Pelanggan</label
+                      ><select id="operasional-customer" required></select>
+                    </div>
+                    <div id="order-items" class="order-items">
+                      <div class="order-item-fields" data-order-item>
+                        <div class="field full">
+                          <label for="operasional-service">Layanan</label
+                          ><select id="operasional-service" class="order-service-select" required></select>
+                        </div>
+                        <div class="field">
+                          <label for="operasional-unit">Satuan</label
+                          ><select id="operasional-unit" class="order-unit-select">
+                            <option value="kg">Kilogram (kg)</option>
+                            <option value="item">Satuan (item)</option>
+                          </select>
+                        </div>
+                        <div class="field">
+                          <label for="operasional-quantity">Jumlah</label
+                          ><input
+                            id="operasional-quantity"
+                            class="order-quantity-input"
+                            type="text"
+                            inputmode="decimal"
+                            placeholder="Contoh: 2,5"
+                            required
+                          />
+                        </div>
+                        <button class="operasional-button-secondary order-remove-item" type="button" hidden>Hapus item</button>
+                      </div>
+                    </div>
+                    <button id="add-order-item" class="operasional-button-secondary order-add-item" type="button">+ Tambah item</button>
+                    <div class="field">
+                      <label for="operasional-date">Tanggal masuk</label
+                      ><input id="operasional-date" type="date" required />
+                    </div>
+                    <div class="field">
+                      <label for="operasional-discount">Diskon (Rp)</label
+                      ><input id="operasional-discount" type="number" min="0" step="1" value="0" />
+                    </div>
+                    <div class="field full">
+                      <label for="operasional-note">Catatan</label
+                      ><textarea
+                        id="operasional-note"
+                        rows="3"
+                        placeholder="Catatan kebutuhan pelanggan"
+                      ></textarea>
+                    </div>
+                  </div>
+                  <p
+                    class="form-warning"
+                    id="operasional-form-error"
+                    role="alert"
+                    hidden
+                  ></p>
+                  <button
+                    class="operasional-button operasional-button-wide"
+                    type="submit"
+                  >
+                    Simpan order <span>→</span>
+                  </button>
+                  <p class="save-note">
+                    Jika jaringan terputus, coba lagi. ID permintaan tetap sama agar order tidak ganda.
+                  </p>
+                </form>
+              </div>
+              <div class="operasional-card summary-card">
+                <div class="summary-top">
+                  <span>RINGKASAN ORDER</span
+                  ><span class="data-pill" id="summary-saved" hidden>TERSIMPAN</span>
+                </div>
+                <div class="summary-empty" id="summary-empty">
+                  <span data-icon="calculator" aria-hidden="true"></span>
+                  <h3>Belum ada order tersimpan</h3>
+                  <p>Isi detail lalu tekan “Simpan order”.</p>
+                </div>
+                <div id="summary-content" hidden>
+                  <div class="summary-line">
+                    <span>Pelanggan</span
+                    ><strong id="summary-customer"></strong>
+                  </div>
+                  <div class="summary-line">
+                    <span>Layanan</span><strong id="summary-service"></strong>
+                  </div>
+                  <div class="summary-line">
+                    <span>Tanggal masuk</span
+                    ><strong id="summary-date"></strong>
+                  </div>
+                  <div class="summary-line">
+                    <span>Jumlah</span><strong id="summary-quantity"></strong>
+                  </div>
+                  <div class="summary-line">
+                    <span>Harga satuan saat order</span
+                    ><strong id="summary-unit-price"></strong>
+                  </div>
+                  <div class="summary-line">
+                    <span>Estimasi pengerjaan</span
+                    ><strong id="summary-estimate"></strong>
+                  </div>
+                  <div class="summary-line">
+                    <span>Status pembayaran</span
+                    ><strong id="summary-payment"></strong>
+                  </div>
+                  <div class="summary-total">
+                    <span>Total tersimpan</span
+                    ><strong id="summary-total"></strong>
+                  </div>
+                  <p class="summary-note">
+                    Nominal di atas berasal dari respons Order API setelah order tersimpan.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            class="operasional-view"
+            id="orders"
+            data-page="orders"
+            hidden
+          >
+            <div class="page-heading">
+              <div>
+                <div class="operasional-kicker">TRANSAKSI</div>
+                <h1>Riwayat order</h1>
+                <p>Cari order yang tersimpan dan periksa pembayaran.</p>
+              </div>
+            </div>
+            <div id="orders-state" class="api-state" role="status" aria-live="polite"></div>
+            <div class="operasional-card">
+              <div class="list-toolbar">
+                <label class="search-field"
+                  ><span data-icon="search" aria-hidden="true"></span
+                  ><span class="sr-only">Cari order</span
+                  ><input
+                    id="order-search"
+                    type="search"
+                    placeholder="Cari no. order atau pelanggan" /></label
+                ><label class="filter-field"
+                  ><span class="sr-only">Filter status</span
+                  ><select id="order-filter">
+                    <option value="all">Semua status</option>
+                    <option value="baru">Antre</option>
+                    <option value="diproses">Diproses</option>
+                    <option value="selesai">Siap diambil</option>
+                    <option value="diambil">Selesai</option>
+                    <option value="dibatalkan">Dibatalkan</option>
+                  </select></label
+                >
+              </div>
+              <div class="table-wrap">
+                <table class="operasional-table">
+                  <thead>
+                    <tr>
+                      <th>No. order</th>
+                      <th>Tanggal</th>
+                      <th>Pelanggan</th>
+                      <th>Layanan</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Pembayaran</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="order-rows"></tbody>
+                </table>
+              </div>
+              <p class="empty-state" id="order-empty" hidden>
+                Belum ada order yang cocok.
+              </p>
+            </div>
+          </section>
+
+          <section
+            class="operasional-view"
+            id="expenses"
+            data-page="expenses"
+            hidden
+          >
+            <div class="page-heading">
+              <div>
+                <div class="operasional-kicker">OPERASIONAL</div>
+                <h1>Pengeluaran & laporan</h1>
+                <p>Catat pengeluaran dan lihat ringkasan dari database.</p>
+              </div>
+            </div>
+            <div class="operasional-card padded-card management-form">
+              <div class="card-heading"><div><h2>Tambah pengeluaran</h2><p>Nominal disimpan di Order API.</p></div></div>
+              <form id="expense-form" novalidate>
+                <div class="operasional-form-grid">
+                  <div class="field"><label for="expense-category">Kategori</label><input id="expense-category" required maxlength="80" /></div>
+                  <div class="field"><label for="expense-amount">Nominal (Rp)</label><input id="expense-amount" type="number" min="1" step="1" required /></div>
+                  <div class="field"><label for="expense-date">Tanggal</label><input id="expense-date" type="date" required /></div>
+                  <div class="field full"><label for="expense-description">Keterangan</label><textarea id="expense-description" rows="2" required maxlength="500"></textarea></div>
+                </div>
+                <p id="expense-form-error" class="form-warning" role="alert" hidden></p>
+                <button class="operasional-button" type="submit">Simpan pengeluaran</button>
+              </form>
+            </div>
+            <div class="operasional-card padded-card management-form">
+              <div class="card-heading"><div><h2>Rentang laporan</h2><p>Ringkasan berdasarkan tanggal yang dipilih.</p></div></div>
+              <form id="report-form" class="operasional-form-grid">
+                <div class="field"><label for="report-from">Dari tanggal</label><input id="report-from" type="date" required /></div>
+                <div class="field"><label for="report-to">Sampai tanggal</label><input id="report-to" type="date" required /></div>
+                <div class="field"><button class="operasional-button" type="submit">Tampilkan laporan</button></div>
+              </form>
+            </div>
+            <div id="report-state" class="api-state" role="status" aria-live="polite"></div>
+            <div class="report-grid">
+              <article class="metric-card">
+                <div
+                  class="metric-icon"
+                  data-icon="wallet"
+                  aria-hidden="true"
+                ></div>
+                <span>Pengeluaran</span
+                ><strong id="report-expenses">—</strong
+                ><small>Dalam rentang laporan</small>
+              </article>
+              <article class="metric-card">
+                <div
+                  class="metric-icon mint"
+                  data-icon="circle-check"
+                  aria-hidden="true"
+                ></div>
+                <span>Pembayaran diterima</span
+                ><strong id="report-payments">—</strong
+                ><small>Dalam rentang laporan</small>
+              </article>
+              <article class="metric-card">
+                <div
+                  class="metric-icon peach"
+                  data-icon="calculator"
+                  aria-hidden="true"
+                ></div>
+                <span>Selisih sederhana</span
+                ><strong id="report-balance">—</strong
+                ><small>Pembayaran − pengeluaran</small>
+              </article>
+            </div>
+            <div class="operasional-card">
+              <div class="card-heading">
+                <div>
+                  <h2>Daftar pengeluaran</h2>
+                  <p>Pengeluaran terbaru yang tersimpan</p>
+                </div>
+              </div>
+              <p id="expenses-state" class="api-state" role="status" aria-live="polite"></p>
+              <div class="table-wrap">
+                <table class="operasional-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Tanggal</th>
+                      <th>Kategori</th>
+                      <th>Keterangan</th>
+                      <th>Jumlah</th>
+                    </tr>
+                  </thead>
+                  <tbody id="expense-rows"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section
+            class="operasional-view"
+            id="receipt"
+            data-page="receipt"
+            hidden
+          >
+            <div class="page-heading">
+              <div>
+                <div class="operasional-kicker">BUKTI TRANSAKSI</div>
+                <h1>Struk</h1>
+                <p>
+                  Pilih order tersimpan, lihat struk, lalu cetak lewat browser.
+                </p>
+              </div>
+            </div>
+            <div class="receipt-layout">
+              <div class="operasional-card padded-card">
+                <div class="card-heading">
+                  <div>
+                    <h2>Pilih order</h2>
+                    <p>Struk diambil langsung dari Order API.</p>
+                  </div>
+                </div>
+                <div id="receipt-state" class="api-state" role="status" aria-live="polite"></div>
+                <div class="field">
+                  <label for="receipt-order">No. order</label
+                  ><select id="receipt-order"></select>
+                </div>
+                <div class="receipt-actions">
+                  <button
+                    id="print-receipt"
+                    type="button"
+                    class="operasional-button"
+                  >
+                    Cetak struk <span>↗</span>
+                  </button>
+                  <p>
+                    Browser akan membuka dialog cetak. Periksa status pembayaran pada struk.
+                  </p>
+                </div>
+              </div>
+              <div
+                class="receipt-paper"
+                id="receipt-paper"
+                aria-label="Pratinjau struk"
+              ></div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <dialog id="order-dialog" class="order-dialog">
+      <div class="dialog-head">
+        <div>
+          <span class="operasional-kicker">DETAIL ORDER</span>
+          <h2 id="dialog-id"></h2>
+        </div>
+        <button type="button" id="close-dialog" aria-label="Tutup detail order">
+          ×
+        </button>
+      </div>
+      <div id="dialog-body"></div>
+      <div id="dialog-state" class="api-state" role="status" aria-live="polite"></div>
+      <form id="status-form" class="dialog-form" novalidate>
+        <label for="dialog-status">Status pengerjaan</label>
+        <select id="dialog-status"><option value="baru">Antre</option><option value="diproses">Diproses</option><option value="selesai">Siap diambil</option><option value="diambil">Selesai</option><option value="dibatalkan">Dibatalkan</option></select>
+        <button class="operasional-button-secondary" type="submit">Simpan status</button>
+      </form>
+      <form id="payment-form" class="dialog-form" novalidate>
+        <label for="payment-amount">Nominal pembayaran (Rp)</label><input id="payment-amount" type="number" min="1" step="1" required />
+        <label for="payment-method">Metode pembayaran</label><select id="payment-method"><option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="qris">QRIS</option></select>
+        <button id="payment-submit" class="operasional-button" type="submit">Catat pembayaran</button>
+      </form>
+      <div class="dialog-actions">
+        <button
+          type="button"
+          class="operasional-button-secondary"
+          id="dialog-receipt"
+        >
+          Lihat struk</button
+        ><button
+          type="button"
+          class="operasional-button"
+          id="dialog-close-bottom"
+        >
+          Tutup
+        </button>
+      </div>
+    </dialog>
+  </body>
+</html>

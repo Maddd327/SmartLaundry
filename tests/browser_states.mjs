@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const pub=process.env.PUBLIC_URL || 'http://127.0.0.1:8080';
+const admin=process.env.ADMIN_URL || 'http://127.0.0.1:8081';
+const browser=await chromium.launch({headless:true});
+try{
+ const page=await browser.newPage();
+ let release;const gate=new Promise(resolve=>release=resolve);
+ await page.route('**/api/services',async route=>{await gate;await route.continue();});
+ await page.goto(pub+'/',{waitUntil:'domcontentloaded'});
+ await page.locator('#public-services-state').getByText('Memuat layanan', {exact:false}).waitFor();
+ release();
+ await page.locator('#service option').nth(2).waitFor({state:'attached'});
+ await page.unroute('**/api/services');
+ await page.locator('#unit').selectOption('item');
+ await page.locator('#quantity').fill('1,5');
+ await page.locator('#booking-form button[type=submit]').click();
+ assert.ok((await page.locator('#form-error').innerText()).includes('bilangan bulat positif'));
+ assert.equal(await page.locator('#quantity').evaluate(el=>document.activeElement===el),true);
+ console.log('Public loading and item validation/focus OK');
+ let releaseOrders;const orderGate=new Promise(resolve=>releaseOrders=resolve);
+ await page.route('**/api/orders',async route=>{if(route.request().method()==='GET'){await orderGate;}await route.continue();});
+ await page.goto(admin+'/operasional.html#orders',{waitUntil:'domcontentloaded'});
+ await page.locator('#orders-state').getByText('Memuat order', {exact:false}).waitFor();
+ releaseOrders();
+ await page.locator('#order-rows tr').first().waitFor({state:'attached'});
+ await page.unroute('**/api/orders');
+ await page.goto(admin+'/operasional.html#new-order');
+ await page.locator('#add-order-item').click();
+ await page.locator('#operasional-order-form button[type=submit]').click();
+ assert.ok((await page.locator('#operasional-form-error').innerText()).includes('Pilih pelanggan'));
+ assert.equal(await page.locator('#operasional-customer').evaluate(el=>document.activeElement===el),true);
+ console.log('POS loading and required field validation/focus OK');
+}finally{await browser.close();}

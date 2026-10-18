@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#edf5f8" />
+    <meta
+      name="description"
+      content="Laundry Mr Andy: lihat harga acuan dan siapkan pesan laundry melalui WhatsApp."
+    />
+    <title>Laundry Mr Andy — Laundry bersih, wangi, tanpa ribet</title>
+    <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="module" src="js/pelanggan.js"></script>
+  </head>
+  <body class="public-page">
+    <header class="site-header">
+      <div class="container header-inner">
+        <a
+          class="brand"
+          href="#beranda"
+          aria-label="Laundry Mr Andy, kembali ke atas"
+          ><span>Laundry<strong>Mr Andy.</strong></span></a
+        >
+        <nav class="main-nav" id="main-nav" aria-label="Navigasi utama">
+          <a href="#layanan">Layanan</a><a href="#harga">Harga</a
+          ><a href="#cara-kerja">Cara Kerja</a><a href="#tentang">Tentang</a
+          ><a href="#faq">FAQ</a><a href="#kontak">Kontak</a>
+        </nav>
+        <a class="button button-small header-cta" href="#pesan"
+          >Pesan Sekarang</a
+        >
+        <button
+          class="menu-toggle"
+          type="button"
+          aria-label="Buka menu"
+          aria-controls="main-nav"
+          aria-expanded="false"
+        >
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </header>
+
+    <main id="beranda">
+      <section class="hero section-pad">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <div class="eyebrow">Waktu Anda untuk hal yang lebih berarti</div>
+            <h1>Laundry bersih,<br /><em>wangi,</em><br />tanpa ribet.</h1>
+            <p>
+              Dari pakaian sehari-hari sampai kemeja favorit. Pilih
+              perawatannya, lihat perkiraan biaya, lalu kirim detail pesanan
+              lewat WhatsApp.
+            </p>
+            <div class="hero-actions">
+              <a class="button" href="#pesan"
+                >Pesan Laundry Sekarang <span aria-hidden="true">↗</span></a
+              ><a class="button button-outline" href="#layanan"
+                >Lihat Layanan</a
+              >
+            </div>
+            <div class="hero-note">
+              <span data-icon="message-circle" aria-hidden="true"></span>
+              Isi di website, lalu konfirmasi bersama di WhatsApp.
+            </div>
+          </div>
+          <div class="hero-visual">
+            <img
+              src="assets/images/laundry-editorial.webp"
+              alt="Ilustrasi keranjang berisi handuk dan pakaian bersih bernuansa biru"
+              width="1024"
+              height="1024"
+            />
+            <div class="visual-caption">
+              Pakaian terawat. Hari terasa lebih ringan.
+            </div>
+            <div class="visual-note">
+              <span data-icon="shirt" aria-hidden="true"></span
+              ><span
+                ><strong>Untuk yang Anda pakai setiap hari.</strong
+                ><small>Kiloan, satuan, dan setrika.</small></span
+              >
+            </div>
+          </div>
+        </div>
+        <div class="hero-benefits">
+          <div class="container hero-bottom">
+            <span
+              ><span data-icon="clipboard-list" aria-hidden="true"></span>
+              Rincian biaya sebelum konfirmasi</span
+            >
+            <span
+              ><span data-icon="timer" aria-hidden="true"></span> Pilihan
+              reguler & express</span
+            >
+            <span
+              ><span data-icon="message-circle" aria-hidden="true"></span>
+              Tanyakan kebutuhan khusus</span
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="section-pad services-section" id="layanan">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <span class="section-kicker">Layanan laundry</span>
+              <h2>Beda kebutuhan.<br />Tepat perawatannya.</h2>
+            </div>
+            <p>
+              Untuk pakaian harian, jadwal yang padat, atau pakaian yang tinggal
+              disetrika. Pilih layanan yang sesuai.
+            </p>
+          </div>
+          <div class="service-grid" id="service-cards"></div>
+          <div class="api-state" id="public-services-state" role="status" aria-live="polite">Memuat layanan dan harga…</div>
+          <p class="section-footnote">
+            Katalog dan harga acuan dari layanan awal. Ketersediaan serta harga
+            akhir dikonfirmasi oleh outlet.
+          </p>
+        </div>
+      </section>
+
+      <section class="section-pad prices-section" id="harga">
+        <div class="container prices-grid">
+          <div class="prices-intro">
+            <span class="section-kicker">Harga yang mudah dibaca</span>
+            <h2>Hitung dulu.<br />Pesan kemudian.</h2>
+            <p>
+              Lihat biaya per kilogram atau per item. Anda juga bisa menghitung
+              perkiraan total pada form pesanan.
+            </p>
+            <a class="text-link" href="#pesan"
+              >Hitung estimasi pesanan <span aria-hidden="true">↗</span></a
+            >
+          </div>
+          <div class="price-card">
+            <div class="table-scroll">
+              <table>
+                <caption class="sr-only">
+                  Harga acuan layanan laundry
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Layanan</th>
+                    <th scope="col">Per kg</th>
+                    <th scope="col">Per item</th>
+                    <th scope="col">Estimasi</th>
+                  </tr>
+                </thead>
+                <tbody id="price-rows"></tbody>
+              </table>
+            </div>
+            <div class="price-footnote">
+              Harga acuan diambil dari katalog. Harga akhir dikonfirmasi oleh outlet.
+              Estimasi pengerjaan dimulai setelah pesanan dikonfirmasi outlet.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-pad steps-section" id="cara-kerja">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <span class="section-kicker">Cara kerja</span>
+              <h2>Dari keranjang,<br />kembali siap dipakai.</h2>
+            </div>
+            <p>
+              Empat langkah yang jelas. Mulai dari website dan sepakati
+              detailnya bersama outlet.
+            </p>
+          </div>
+          <div class="step-grid">
+            <article class="step">
+              <span class="step-number">01</span>
+              <div
+                class="step-icon"
+                data-icon="clipboard-list"
+                aria-hidden="true"
+              ></div>
+              <h3>Pilih & isi detail</h3>
+              <p>Pilih layanan, jumlah, dan tanggal yang diinginkan.</p>
+            </article>
+            <article class="step">
+              <span class="step-number">02</span>
+              <div
+                class="step-icon"
+                data-icon="message-circle"
+                aria-hidden="true"
+              ></div>
+              <h3>Konfirmasi bersama</h3>
+              <p>
+                Periksa estimasi, lalu kirim pesan sendiri melalui WhatsApp.
+              </p>
+            </article>
+            <article class="step">
+              <span class="step-number">03</span>
+              <div
+                class="step-icon"
+                data-icon="shopping-bag"
+                aria-hidden="true"
+              ></div>
+              <h3>Serahkan cucian</h3>
+              <p>Ikuti cara penyerahan yang disepakati bersama outlet.</p>
+            </article>
+            <article class="step">
+              <span class="step-number">04</span>
+              <div
+                class="step-icon"
+                data-icon="circle-check"
+                aria-hidden="true"
+              ></div>
+              <h3>Tunggu kabar selesai</h3>
+              <p>Pastikan perkiraan waktu pengerjaan saat konfirmasi.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="about-section section-pad" id="tentang">
+        <div class="container about-grid">
+          <div class="about-copy">
+            <span class="section-kicker">Tentang Laundry Mr Andy</span>
+            <h2>
+              Lebih sedikit<br />urusan cucian.<br /><em
+                >Lebih banyak waktu<br />untuk Anda.</em
+              >
+            </h2>
+            <p>
+              Laundry Mr Andy membantu Anda merencanakan perawatan pakaian.
+              Kenali pilihan layanan, periksa harga acuan, lalu bicarakan
+              kebutuhan Anda langsung dengan outlet.
+            </p>
+            <a class="button button-light" href="#pesan"
+              >Rencanakan Laundry Anda</a
+            >
+          </div>
+          <div class="about-features">
+            <span class="section-kicker">Kenapa mulai di sini?</span>
+            <div class="about-feature">
+              <span data-icon="clipboard-list" aria-hidden="true"></span>
+              <div>
+                <h3>Harga & detail terlihat</h3>
+                <p>
+                  Layanan, satuan harga, dan estimasi tampil sebelum Anda
+                  mengirim permintaan.
+                </p>
+              </div>
+            </div>
+            <div class="about-feature">
+              <span data-icon="message-circle" aria-hidden="true"></span>
+              <div>
+                <h3>Kebutuhan Anda tersampaikan</h3>
+                <p>
+                  Tambahkan catatan untuk pakaian khusus atau penanganan yang
+                  perlu dibicarakan.
+                </p>
+              </div>
+            </div>
+            <div class="about-feature">
+              <span data-icon="circle-check" aria-hidden="true"></span>
+              <div>
+                <h3>Konfirmasi sebelum diproses</h3>
+                <p>
+                  Sepakati harga akhir dan jadwal bersama outlet. Form ini tidak
+                  memproses pembayaran.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="order-section section-pad" id="pesan">
+        <div class="container order-grid">
+          <div class="order-aside">
+            <span class="section-kicker">Pesan laundry</span>
+            <h2>Keranjang penuh?<br />Kita mulai.</h2>
+            <p>
+              Tidak perlu menebak biayanya. Pilih layanan dan isi jumlah, lalu
+              periksa rinciannya sebelum dikirim.
+            </p>
+            <div class="order-points">
+              <div><span>01</span>Pilih layanan dan satuan</div>
+              <div><span>02</span>Lihat estimasi harga</div>
+              <div><span>03</span>Kirim pesan di WhatsApp</div>
+            </div>
+            <div class="aside-disclaimer">
+              Form ini tidak menyimpan order dan tidak mengirim WhatsApp secara
+              otomatis.
+            </div>
+            <div class="order-help">
+              <span data-icon="shirt" aria-hidden="true"></span
+              ><strong>Ada pakaian yang perlu perhatian khusus?</strong>
+              <p>
+                Cantumkan jenis bahan dan instruksi perawatan di catatan.
+                Penanganannya dikonfirmasi terlebih dahulu.
+              </p>
+            </div>
+          </div>
+          <div class="booking-card">
+            <form id="booking-form" novalidate>
+              <div class="form-head">
+                <h3>Detail pesanan</h3>
+                <span>Isi kolom bertanda *</span>
+              </div>
+              <div class="form-grid">
+                <div class="field full">
+                  <label for="service">Layanan <b>*</b></label
+                  ><select id="service" name="service" required></select>
+                </div>
+                <div class="field">
+                  <label for="unit">Hitung berdasarkan <b>*</b></label
+                  ><select id="unit" name="unit" required>
+                    <option value="kg">Kilogram (kg)</option>
+                    <option value="item">Satuan (item)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="quantity">Jumlah <b>*</b></label>
+                  <div class="input-suffix">
+                    <input
+                      id="quantity"
+                      name="quantity"
+                      type="text"
+                      inputmode="decimal"
+                      placeholder="Contoh: 2,5"
+                      required
+                    /><span id="quantity-suffix">kg</span>
+                  </div>
+                  <small id="quantity-help"
+                    >Boleh memakai angka pecahan, misalnya 2,5 kg.</small
+                  >
+                </div>
+                <div class="field">
+                  <label for="date">Tanggal yang diinginkan <b>*</b></label
+                  ><input id="date" name="date" type="date" required />
+                </div>
+                <div class="field">
+                  <label for="customer-name">Nama <b>*</b></label
+                  ><input
+                    id="customer-name"
+                    name="name"
+                    type="text"
+                    autocomplete="name"
+                    placeholder="Nama Anda"
+                    required
+                  />
+                </div>
+                <div class="field full">
+                  <label for="phone">Nomor WhatsApp <b>*</b></label
+                  ><input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    inputmode="tel"
+                    autocomplete="tel"
+                    placeholder="Contoh: 081234567890"
+                    required
+                  /><small
+                    >Gunakan nomor Indonesia yang aktif (08... atau
+                    +62...).</small
+                  >
+                </div>
+                <div class="field full">
+                  <label for="notes">Catatan (opsional)</label
+                  ><textarea
+                    id="notes"
+                    name="notes"
+                    rows="3"
+                    placeholder="Contoh: pisahkan pakaian berwarna terang"
+                  ></textarea>
+                </div>
+              </div>
+              <div class="estimate-box">
+                <div>
+                  <span>Estimasi harga acuan</span
+                  ><strong id="estimated-price">Rp0</strong>
+                </div>
+                <small id="estimate-description"
+                  >Pilih layanan dan isi jumlah untuk melihat estimasi.</small
+                >
+              </div>
+              <p class="form-warning" id="form-error" role="alert" hidden></p>
+              <button type="submit" class="button button-full">
+                Lanjutkan ke WhatsApp <span aria-hidden="true">↗</span>
+              </button>
+              <p class="form-disclaimer">
+                Harga dan jadwal akhir perlu dikonfirmasi outlet. Anda sendiri
+                yang menekan tombol kirim di WhatsApp.
+              </p>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-pad faq-section" id="faq">
+        <div class="container faq-grid">
+          <div>
+            <span class="section-kicker">Sebelum Anda memesan</span>
+            <h2>Masih ada<br />yang ingin<br />ditanyakan?</h2>
+            <p>Beberapa hal yang perlu diketahui sebelum menyiapkan pesanan.</p>
+          </div>
+          <div class="faq-list">
+            <details>
+              <summary>
+                Bagaimana cara memesan lewat WhatsApp?<span aria-hidden="true"
+                  >+</span
+                >
+              </summary>
+              <p>
+                Isi form pemesanan, lalu pilih “Lanjutkan ke WhatsApp”. Pesan
+                berisi detail pesanan akan terbuka di WhatsApp. Periksa dan
+                tekan kirim sendiri untuk menghubungi outlet.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Apa beda harga per kg dan per item?<span aria-hidden="true"
+                  >+</span
+                >
+              </summary>
+              <p>
+                Harga per kg dihitung dari berat pakaian, sedangkan harga per
+                item dihitung dari jumlah pakaian. Pilih satuan saat mengisi
+                form; harga pada halaman ini masih berupa harga acuan.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Apakah estimasi harga dan waktu sudah pasti?<span
+                  aria-hidden="true"
+                  >+</span
+                >
+              </summary>
+              <p>
+                Belum. Estimasi dihitung dari harga acuan dan jumlah yang Anda
+                isi. Harga akhir serta jadwal pengerjaan perlu dikonfirmasi oleh
+                outlet setelah detail pesanan diperiksa.
+              </p>
+            </details>
+            <details>
+              <summary>
+                Bagaimana cara pembayarannya?<span aria-hidden="true">+</span>
+              </summary>
+              <p>
+                Silakan tanyakan metode dan waktu pembayaran saat berkomunikasi
+                dengan outlet melalui WhatsApp. Form di halaman ini tidak
+                memproses pembayaran.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="contact-section" id="kontak">
+        <div class="container contact-inner">
+          <div>
+            <span class="section-kicker">Hubungi kami</span>
+            <h2>Cucian Anda,<br /><em>kami bantu rencanakan.</em></h2>
+            <p>
+              Hubungi Laundry Mr Andy untuk memastikan detail layanan dan
+              jadwal.
+            </p>
+          </div>
+          <a
+            class="button button-light"
+            id="contact-whatsapp"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Chat via WhatsApp <span aria-hidden="true">↗</span></a
+          >
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div>
+          <a class="brand" href="#beranda"
+            ><span>Laundry<strong>Mr Andy.</strong></span></a
+          >
+          <p>Perawatan pakaian dimulai dari pilihan yang jelas.</p>
+        </div>
+        <div class="footer-links">
+          <a href="#layanan">Layanan</a><a href="#harga">Harga acuan</a
+          ><a href="#faq">FAQ</a><a href="#kontak">Kontak</a
+          >
+        </div>
+        <span class="copyright">© 2026 Laundry Mr Andy.</span>
+      </div>
+    </footer>
+  </body>
+</html>

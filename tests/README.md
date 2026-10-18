@@ -1,0 +1,42 @@
+# Pengujian alur lengkap
+
+Skrip browser memakai Playwright sebagai **alat tes saja**; frontend produksi tetap HTML, CSS, dan JavaScript biasa. Jalankan skrip tulis hanya pada stack lokal yang memakai **database uji terpisah**. `E2E_ALLOW_WRITES=1` adalah pengaman untuk menghindari penulisan tanpa sengaja, bukan pengganti database uji. `browser_public.mjs` mengharapkan katalog berisi tiga layanan awal dan belum ada order; jalankan sebelum tes admin.
+
+Jika Playwright belum terpasang, jalankan `npm install` dan `npx playwright install chromium firefox webkit`. Atur `PUBLIC_URL` dan `ADMIN_URL` jika port uji berbeda dari `8080`/`8081`.
+
+Urutan perintah pada stack uji:
+
+```bash
+export PUBLIC_URL=http://127.0.0.1:8080
+export ADMIN_URL=http://127.0.0.1:8081
+python3 scripts/check_gateway.py --public "$PUBLIC_URL" --admin "$ADMIN_URL"
+node tests/whatsapp.mjs
+npm run test:browser:public
+E2E_ALLOW_WRITES=1 npm run test:browser:admin
+npm run test:browser:quality
+# Hentikan Order API A pada stack uji, misalnya: docker compose stop order-api-a
+E2E_ALLOW_WRITES=1 npm run test:browser:failover
+# Jalankan kembali A, lalu periksa order yang dibuat B tetap terbaca.
+```
+
+Tes PostgreSQL dengan URL tes serta migrasi dijelaskan di [backend/README.md](../backend/README.md). Skrip browser admin membuat dua order uji, satu pelanggan, satu layanan, dan satu pengeluaran. Skrip failover membuat satu order tambahan. File `tests/.e2e-state.json` berisi ID uji dan diabaikan Git.
+
+## Hasil pemeriksaan 18 Oktober 2026
+
+Lingkungan uji lokal: Nginx pada `127.0.0.1:18080` dan `127.0.0.1:18081`, dua Flask Order API, Catalog API, PostgreSQL database `laundry_test`, Playwright 1.64.1.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `python -m pytest -q` dengan tiga URL database tes | Lulus, 11 tes |
+| `node tests/whatsapp.mjs` | Lulus: normalisasi nomor dan encoding pesan |
+| `python3 scripts/check_gateway.py --public http://127.0.0.1:18080 --admin http://127.0.0.1:18081` | Lulus: port publik menolak POS dan API transaksi |
+| `npm run test:browser:public` | Lulus: tiga layanan/harga API; kg dan item; URL WhatsApp; nol order dibuat |
+| `npm run test:browser:admin` | Lulus: katalog, pelanggan, dua item/order, DP/lunas, status, struk, pengeluaran/laporan, idempotensi |
+| `npm run test:browser:quality` | Lulus: Chromium, Firefox, WebKit pada 320/375/768/1440 px; tidak ada overflow atau galat JS; label, keyboard, fokus, loading, kosong, error/retry |
+| `npm run test:browser:failover` setelah A dihentikan | Lulus: POS membuat dan membaca order melalui B; header `X-Instance-ID: order-api-b` |
+| `docker compose config --quiet` | Lulus |
+
+PDF struk juga dibuat dengan cetak browser Chromium; teks layanan, total Rp58.000, dan status Lunas terbaca dari PDF. Setelah A dijalankan lagi, A membaca tiga order uji yang sama dari PostgreSQL.
+Setelah proses PostgreSQL lokal dihentikan dan dijalankan lagi dengan direktori data yang sama, A dan B masing-masing tetap membaca ketiga order tersebut.
+
+**Batas pengujian:** Docker daemon menolak akses (`permission denied /var/run/docker.sock`), sehingga stop/start container Compose tidak dapat dijalankan di lingkungan ini; failover dibuktikan dengan menghentikan proses Order API lokal. Dialog cetak fisik dan pengiriman pesan WhatsApp tidak diuji: aplikasi hanya menyiapkan URL chat, dan pelanggan sendiri yang menekan kirim.
