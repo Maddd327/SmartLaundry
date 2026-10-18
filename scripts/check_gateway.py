@@ -45,9 +45,14 @@ def main():
     for method in ('POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'):
         expect(args.public, '/api/services', 405, method)
     expect(args.public, '/api/services', 200, 'HEAD')
+    expect(args.public, '/api/track', 400)
+    expect(args.public, '/api/track?code=invalid', 422)
+    for method in ('POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'):
+        expect(args.public, '/api/track', 405, method)
     for path in ('/api/services/', '/api/services.json', '/api/services/../orders',
                  '/api/%6f%72ders', '/api/orders', '/api/customers',
-                 '/api/expenses', '/api/orders/example/payments', '/healthz'):
+                 '/api/expenses', '/api/orders/example/payments', '/healthz',
+                 '/api/track/', '/api/track.json', '/api/track/../orders'):
         expect(args.public, path, 404)
     for method in ('GET', 'POST', 'PATCH', 'OPTIONS'):
         expect(args.public, '/api/customers', 404, method)

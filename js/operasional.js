@@ -185,6 +185,7 @@ freshClientId();
 $('#operasional-date').value = today(); $('#operasional-date').max = today();
 function renderSummary(order) {
   state.lastSavedOrderId = order.id;
+  $('#summary-tracking-code').textContent = order.id;
   $('#summary-customer').textContent = order.customer_name;
   $('#summary-service').textContent = order.items.map((item) => item.service_name).join(' + ');
   $('#summary-date').textContent = tanggal(order.ordered_at);
@@ -267,7 +268,7 @@ const dialog = $('#order-dialog');
 function detailRow(name, value) { return `<div class="dialog-detail"><span>${safe(name)}</span><span>${safe(value)}</span></div>`; }
 function renderDetail(order) {
   state.selected = order; $('#dialog-id').textContent = `Order ${order.id.slice(0, 8)}`;
-  const details = [['Tanggal masuk', tanggalWaktu(order.ordered_at)], ['Pelanggan', order.customer_name], ['WhatsApp', order.customer_whatsapp], ['Status pengerjaan', label(order.status)], ['Perkiraan selesai', tanggalWaktu(order.expected_completed_at)], ['Catatan', order.note || '—']];
+  const details = [['Kode lacak pelanggan', order.id], ['Tanggal masuk', tanggalWaktu(order.ordered_at)], ['Pelanggan', order.customer_name], ['WhatsApp', order.customer_whatsapp], ['Status pengerjaan', label(order.status)], ['Perkiraan selesai', tanggalWaktu(order.expected_completed_at)], ['Catatan', order.note || '—']];
   const items = order.items.map((item) => `${item.service_name} · ${Number(item.quantity).toLocaleString('id-ID')} ${item.unit} × ${rupiah(item.unit_price)} = ${rupiah(item.line_total)}`);
   const payments = order.payments.length ? order.payments.map((payment) => `${tanggal(payment.paid_at)} · ${label(payment.method)} · ${rupiah(payment.amount)}`) : ['Belum ada pembayaran'];
   $('#dialog-body').innerHTML = `<div class="dialog-section"><h3>Rincian order</h3>${details.map(([key, value]) => detailRow(key, value)).join('')}${items.map((item) => detailRow('Item', item)).join('')}${detailRow('Subtotal', rupiah(order.subtotal))}${detailRow('Diskon', rupiah(order.discount))}${detailRow('Total', rupiah(order.total))}</div><div class="dialog-section"><h3>Pembayaran · ${safe(label(order.payment_status))}</h3>${payments.map((item) => detailRow('Tercatat', item)).join('')}${detailRow('Sudah dibayar', rupiah(order.paid_amount))}${detailRow('Sisa', rupiah(order.total - order.paid_amount))}</div>`;
@@ -339,7 +340,7 @@ $('#report-form').addEventListener('submit', (event) => { event.preventDefault()
 function receiptRow(name, value, className = '') { return `<div class="receipt-row ${className}"><span>${safe(name)}</span><span>${safe(value)}</span></div>`; }
 function renderReceipt(receipt) {
   const order = receipt.order;
-  $('#receipt-paper').innerHTML = `<div class="receipt-logo"><strong>${safe(receipt.business_name)}.</strong><span>STRUK ORDER TERSIMPAN</span></div><div class="receipt-title">RINCIAN ORDER</div>${receiptRow('No. order', order.id)}${receiptRow('Tanggal', tanggal(order.ordered_at))}${receiptRow('Pelanggan', order.customer_name)}${receiptRow('Status pengerjaan', label(order.status))}<div class="receipt-rule"></div>${order.items.map((item) => receiptRow(`${item.service_name} · ${Number(item.quantity).toLocaleString('id-ID')} ${item.unit} × ${rupiah(item.unit_price)}`, rupiah(item.line_total))).join('')}<div class="receipt-rule"></div>${receiptRow('Subtotal', rupiah(order.subtotal))}${receiptRow('Diskon', rupiah(order.discount))}${receiptRow('Total', rupiah(order.total), 'receipt-total')}${receiptRow('Dibayar', rupiah(order.paid_amount))}${receiptRow('Sisa', rupiah(order.total - order.paid_amount))}${receiptRow('Status pembayaran', label(order.payment_status))}<div class="receipt-rule"></div><div class="receipt-foot">Struk ini memuat data order dan pembayaran yang tersimpan.</div>`;
+  $('#receipt-paper').innerHTML = `<div class="receipt-logo"><strong>${safe(receipt.business_name)}.</strong><span>STRUK ORDER TERSIMPAN</span></div><div class="receipt-title">RINCIAN ORDER</div>${receiptRow('Kode lacak', order.id)}${receiptRow('Tanggal', tanggal(order.ordered_at))}${receiptRow('Pelanggan', order.customer_name)}${receiptRow('Status pengerjaan', label(order.status))}<div class="receipt-rule"></div>${order.items.map((item) => receiptRow(`${item.service_name} · ${Number(item.quantity).toLocaleString('id-ID')} ${item.unit} × ${rupiah(item.unit_price)}`, rupiah(item.line_total))).join('')}<div class="receipt-rule"></div>${receiptRow('Subtotal', rupiah(order.subtotal))}${receiptRow('Diskon', rupiah(order.discount))}${receiptRow('Total', rupiah(order.total), 'receipt-total')}${receiptRow('Dibayar', rupiah(order.paid_amount))}${receiptRow('Sisa', rupiah(order.total - order.paid_amount))}${receiptRow('Status pembayaran', label(order.payment_status))}<div class="receipt-rule"></div><div class="receipt-foot">Masukkan kode lacak di website Laundry Mr Andy untuk melihat status. Struk ini memuat data order dan pembayaran yang tersimpan.</div>`;
   $('#print-receipt').disabled = false;
 }
 async function loadReceipt() {

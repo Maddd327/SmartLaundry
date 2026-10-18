@@ -121,6 +121,37 @@ def test_dp_lunas_receipt_report_and_invalid_payment(api):
     assert report.json['net_cashflow'] == 10000
 
 
+def test_public_tracking_shows_only_status_after_admin_records_order(api):
+    _, client, _ = api
+    assert client.get('/api/track').status_code == 400
+    assert client.get('/api/track?code=invalid').status_code == 422
+    assert client.get('/api/track?code=invalid&code=invalid').status_code == 400
+    assert client.post('/api/track', json={}).status_code == 405
+    assert client.get(f'/api/track?code={uuid4()}').status_code == 404
+
+    customer_id = new_customer(client)
+    order = client.post('/api/orders', json={
+        'client_order_id':'tracking-'+uuid4().hex,
+        'customer_id':customer_id,
+        'items':[{'service_id':'regular','unit':'kg','quantity':1}],
+    }).json['order']
+    response = client.get(f'/api/track?code={order["id"]}')
+    assert response.status_code == 200
+    assert response.headers['Cache-Control'] == 'no-store'
+    assert set(response.json['tracking']) == {
+        'code', 'status', 'status_label', 'expected_completed_at', 'updated_at',
+    }
+    assert response.json['tracking']['status_label'] == 'Antre'
+    assert response.json['tracking']['expected_completed_at'] == order['expected_completed_at']
+    assert 'Budi' not in response.get_data(as_text=True)
+    assert '6281234567890' not in response.get_data(as_text=True)
+    assert 'paid_amount' not in response.get_data(as_text=True)
+
+    client.patch(f'/api/orders/{order["id"]}/status', json={'status':'selesai'})
+    refreshed = client.get(f'/api/track?code={order["id"]}').json['tracking']
+    assert (refreshed['status'], refreshed['status_label']) == ('selesai', 'Siap diambil')
+
+
 def test_client_order_id_prevents_duplicate_even_concurrently(api):
     _, client, app = api
     customer_id = new_customer(client)

@@ -1,5 +1,5 @@
-import { catalogRequest } from './api.js';
-import { rupiah, durasi, tanggalInput, escapeHtml } from './format.js';
+import { catalogRequest, orderRequest } from './api.js';
+import { rupiah, durasi, tanggalInput, tanggalWaktu, escapeHtml } from './format.js';
 import { normalizeWhatsappNumber, whatsappLink } from './konfigurasi.js';
 import { ikon, pasangIkon } from './ikon.js';
 
@@ -154,6 +154,51 @@ bookingForm.addEventListener('submit', (event) => {
     'Mohon konfirmasi harga akhir, jadwal, dan cara pembayarannya. Terima kasih.',
   ].join('\n');
   window.open(whatsappLink(message), '_blank', 'noopener,noreferrer');
+});
+
+const trackingForm = $('#tracking-form');
+const trackingCode = $('#tracking-code');
+const trackingState = $('#tracking-state');
+const trackingResult = $('#tracking-result');
+const trackingSubmit = $('#tracking-submit');
+
+function trackingMessage(message, isError = false, retry = false) {
+  trackingState.hidden = !message;
+  trackingState.className = isError ? 'api-state error' : 'api-state';
+  trackingState.textContent = message;
+  if (retry) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Coba lagi';
+    button.addEventListener('click', () => trackingForm.requestSubmit());
+    trackingState.append(' ', button);
+  }
+}
+
+trackingForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const code = trackingCode.value.trim().toLowerCase();
+  trackingResult.hidden = true;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(code)) {
+    trackingMessage('Masukkan seluruh kode lacak dari struk, termasuk tanda hubung.', true);
+    trackingCode.focus();
+    return;
+  }
+  trackingSubmit.disabled = true;
+  trackingMessage('Memeriksa status order…');
+  try {
+    const { tracking } = await orderRequest(`/api/track?code=${encodeURIComponent(code)}`);
+    $('#tracking-result-code').textContent = tracking.code;
+    $('#tracking-result-status').textContent = tracking.status_label;
+    $('#tracking-result-estimate').textContent = tanggalWaktu(tracking.expected_completed_at);
+    $('#tracking-result-updated').textContent = tanggalWaktu(tracking.updated_at);
+    trackingResult.hidden = false;
+    trackingMessage('Status terbaru dari Order API.');
+  } catch (requestError) {
+    trackingMessage(requestError.message, true, true);
+  } finally {
+    trackingSubmit.disabled = false;
+  }
 });
 
 pasangIkon();

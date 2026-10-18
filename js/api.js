@@ -1,5 +1,5 @@
-// Kedua halaman memanggil path relatif. Nginx membuka hanya GET katalog pada
-// port publik, sedangkan port admin mem-proxy seluruh API pengelola.
+// Kedua halaman memanggil path relatif. Port publik hanya membuka GET katalog
+// aktif dan status order via kode; port admin mem-proxy seluruh API pengelola.
 export const CATALOG_API = '';
 export const ORDER_API = '';
 

@@ -9,6 +9,7 @@ flowchart LR
   P[Browser pelanggan<br/>port 8080] --> N[Nginx / web]
   A[Browser admin lokal<br/>127.0.0.1:8081] --> N
   N -->|GET layanan aktif| C[Catalog API]
+  N -->|GET status dengan kode lacak| OA
   N -->|kelola katalog, hanya admin| C
   N -->|transaksi, A utama| OA[Order API A]
   N -.->|cadangan saat A gagal| OB[Order API B]
@@ -23,7 +24,7 @@ flowchart LR
 | --- | --- |
 | `web` | Nginx menyajikan halaman publik/POS dan membatasi route menurut port; tidak memiliki tabel. |
 | `catalog-api` | Flask pemilik tabel `catalog.services`; hanya layanan aktif dapat dibaca dari port publik. |
-| `order-api-a`, `order-api-b` | Dua instance Flask dari image yang sama, pemilik tabel `ordering.customers`, `orders`, `order_items`, `payments`, dan `expenses`. Laporan dihitung dari data tersebut. |
+| `order-api-a`, `order-api-b` | Dua instance Flask dari image yang sama, pemilik tabel `ordering.customers`, `orders`, `order_items`, `payments`, dan `expenses`. Laporan dihitung dari data tersebut; endpoint lacak publik hanya mengembalikan status dan perkiraan selesai. |
 | `db` | Satu PostgreSQL untuk kedua service, dengan volume `pgdata`. Infrastruktur database masih bersama dan belum memiliki failover. |
 
 API dan database tidak menerbitkan port host. Nginx mengikat port admin hanya ke `127.0.0.1`; menyembunyikan tombol UI saja bukan pembatas akses.
@@ -49,12 +50,13 @@ Pengelola dari komputer lain perlu jaringan privat atau SSH tunnel ke port admin
 
 ## Alur pelanggan dan transaksi
 
-Website publik membaca tiga layanan awal beserta harga acuan dari `GET /api/services`. Form menghitung estimasi di browser, menormalisasi nomor, lalu membuka `wa.me/628213194417` dengan pesan yang sudah di-encode. **Pelanggan sendiri menekan kirim di WhatsApp**; membuka chat tidak berarti pesan terkirim atau order diterima. Harga dan jadwal akhir dikonfirmasi outlet. Form publik tidak melakukan POST order atau menyimpan data. Setelah konfirmasi WhatsApp, pengelola mencatat pelanggan dan order melalui POS; Order API menghitung ulang harga, menyimpan semua item dalam satu transaksi, dan memakai `client_order_id` untuk mencegah order ganda. Pembayaran, status, struk, pengeluaran, dan laporan dibaca dari database.
+Website publik membaca tiga layanan awal beserta harga acuan dari `GET /api/services`. Form menghitung estimasi di browser, menormalisasi nomor, lalu membuka `wa.me/628213194417` dengan pesan yang sudah di-encode. **Pelanggan sendiri menekan kirim di WhatsApp**; membuka chat tidak berarti pesan terkirim atau order diterima. Harga dan jadwal akhir dikonfirmasi outlet. Form publik tidak melakukan POST order atau menyimpan data. Setelah konfirmasi WhatsApp, pengelola mencatat pelanggan dan order melalui POS; Order API menghitung ulang harga, menyimpan semua item dalam satu transaksi, dan memakai `client_order_id` untuk mencegah order ganda. ID UUID order menjadi **kode lacak** yang tampil di ringkasan POS dan struk. Pengelola memberikan kode itu kepada pelanggan; pelanggan memasukkannya pada bagian **Lacak Order** di website publik untuk melihat status dan perkiraan selesai. Kode belum tersedia hanya karena chat WhatsApp dibuka. Pembayaran, status, struk, pengeluaran, dan laporan dibaca dari database.
 
 ## Contoh API
 
 ```bash
 curl -i http://localhost:8080/api/services
+curl -i 'http://localhost:8080/api/track?code=ID-ORDER-DARI-STRUK'
 curl -i http://127.0.0.1:8081/api/orders
 ```
 
@@ -68,7 +70,7 @@ X-Instance-ID: order-api-a
 {"orders":[]}
 ```
 
-Endpoint admin lain meliputi `POST /api/services`, `POST /api/customers`, `POST /api/orders`, `PATCH /api/orders/{id}/status`, `POST /api/orders/{id}/payments`, `GET /api/orders/{id}/receipt`, dan `GET /api/reports/summary?from=YYYY-MM-DD&to=YYYY-MM-DD`. Galat API berbentuk JSON seperti `{"error":"Pelanggan tidak ditemukan."}` dengan status HTTP yang sesuai. Rincian kontrak ada di [panduan backend](backend/README.md). Port publik menolak POS dan seluruh API transaksi; `GET /api/services` hanya memberi layanan aktif.
+Endpoint admin lain meliputi `POST /api/services`, `POST /api/customers`, `POST /api/orders`, `PATCH /api/orders/{id}/status`, `POST /api/orders/{id}/payments`, `GET /api/orders/{id}/receipt`, dan `GET /api/reports/summary?from=YYYY-MM-DD&to=YYYY-MM-DD`. `GET /api/track?code=<UUID>` di port publik hanya mengembalikan kode, status, perkiraan selesai, dan waktu pembaruan; tidak mengembalikan nama, nomor WhatsApp, rincian, atau pembayaran. Galat API berbentuk JSON seperti `{"error":"Pelanggan tidak ditemukan."}` dengan status HTTP yang sesuai. Rincian kontrak ada di [panduan backend](backend/README.md). Port publik menolak POS dan seluruh API transaksi; `GET /api/services` hanya memberi layanan aktif.
 
 ## Demo maintenance dan failover
 

@@ -66,6 +66,7 @@ try {
  let orders=(await (await fetch(base+'/api/orders')).json()).orders;
  assert.equal(orders.length,1);
  const firstId=orders[0].id;
+ assert.equal(await page.locator('#summary-tracking-code').innerText(),firstId);
  const detail=(await (await fetch(base+'/api/orders/'+firstId)).json()).order;
  assert.equal(detail.items.length,2);
  assert.equal(detail.total,58000);
@@ -91,6 +92,7 @@ try {
  await page.goto(base+'/operasional.html#orders');
  await page.locator(`#order-rows [data-order="${firstId}"]`).click();
  await page.locator('#dialog-body').getByText('Pisahkan warna').waitFor();
+ assert.ok((await page.locator('#dialog-body').innerText()).includes(firstId));
  assert.equal(await page.locator('#dialog-status option:checked').innerText(),'Antre');
  await page.locator('#payment-amount').fill('10000');
  await page.locator('#payment-form button[type=submit]').click();
@@ -113,6 +115,7 @@ try {
  await page.locator('#receipt-paper').getByText('STRUK ORDER TERSIMPAN').waitFor();
  assert.ok((await page.locator('#receipt-paper').innerText()).includes('Layanan E2E'));
  assert.ok((await page.locator('#receipt-paper').innerText()).includes('Lunas'));
+ assert.ok((await page.locator('#receipt-paper').innerText()).includes(firstId));
  await page.evaluate(()=>{window.print=()=>{window.__printed=true;};});
  await page.locator('#print-receipt').click();
  assert.equal(await page.evaluate(()=>window.__printed),true);

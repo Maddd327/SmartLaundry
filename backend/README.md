@@ -3,14 +3,14 @@
 ## Pemilik data
 
 - Catalog API memiliki `catalog.services`. Endpoint publik `GET /api/services` hanya mengembalikan layanan aktif. Pengelola memakai `GET /api/services?include_inactive=true`, `POST /api/services`, dan `PATCH /api/services/{id}` lewat port admin.
-- Order API memiliki seluruh tabel `ordering`: pelanggan, order, item, pembayaran, dan pengeluaran. Ketika order dibuat, layanan aktif dibaca **melalui HTTP** dari Catalog API. Nama dan harga pada item disimpan sebagai snapshot.
+- Order API memiliki seluruh tabel `ordering`: pelanggan, order, item, pembayaran, dan pengeluaran. Ketika order dibuat, layanan aktif dibaca **melalui HTTP** dari Catalog API. Nama dan harga pada item disimpan sebagai snapshot. ID UUID order juga berfungsi sebagai kode lacak; endpoint publik mengembalikan status tanpa data pelanggan atau pembayaran.
 - Keduanya masih memakai **satu instance PostgreSQL sebagai infrastruktur bersama**. Role `catalog_app` hanya boleh membaca/menulis skema `catalog`; role `order_app` hanya boleh membaca/menulis skema `ordering`.
 
 ## Compose dan jaringan
 
 Dari akar proyek, jalankan `python3 scripts/setup_env.py` sekali sebelum `docker compose up --build -d`. Tiga password acak disimpan di `.env` lokal dengan izin pemilik saja; Compose meneruskannya melalui environment server. Jangan masukkan `.env` ke Git, image, HTML, atau JavaScript. Lima service yang berjalan ialah `db`, `catalog-api`, `order-api-a`, `order-api-b`, dan `web`. Hanya `web` memiliki pemetaan port host: `8080` publik dan `127.0.0.1:8081` admin. API serta database tetap di jaringan internal Compose. Nginx mengarahkan Order API ke A utama dan B cadangan. `GET /healthz` pada tiap API memeriksa tabel miliknya di database; healthcheck web juga memeriksa katalog publik dan daftar order melalui proxy. Respons Order API berisi `instance_id` dan header `X-Instance-ID` yang diteruskan Nginx. Healthcheck container tidak menggantikan failover pasif Nginx.
 
-Nginx memblokir halaman POS dan API pengelola di port publik. Untuk melihat instance yang melayani melalui port admin:
+Nginx memblokir halaman POS dan API pengelola di port publik. Port publik hanya membuka `GET /api/services` dan `GET /api/track?code=<UUID>`; yang kedua hanya menampilkan status pengerjaan dan perkiraan selesai. Untuk melihat instance yang melayani melalui port admin:
 
 ```bash
 curl -si http://127.0.0.1:8081/api/orders
@@ -55,6 +55,7 @@ Semua permintaan tulis memakai `Content-Type: application/json`; nominal adalah 
 | Catalog | `GET /api/services` | Layanan aktif; query `include_inactive=true` hanya melalui admin |
 | Catalog | `POST /api/services`, `PATCH /api/services/{id}` | Kelola layanan dan harga |
 | Order | `GET /healthz` | Kesehatan, `instance_id`, dan header `X-Instance-ID` |
+| Order | `GET /api/track?code=<UUID>` | Lacak status publik tanpa data pribadi; kode diberikan pengelola setelah order dicatat |
 | Order | `GET/POST /api/customers`, `PATCH /api/customers/{id}` | Pelanggan |
 | Order | `GET/POST /api/orders`, `GET /api/orders/{id}` | Order dan detail |
 | Order | `PATCH /api/orders/{id}/status` | Status pengerjaan |

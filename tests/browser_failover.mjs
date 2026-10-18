@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const admin = process.env.ADMIN_URL || 'http://127.0.0.1:8081';
+const publicUrl = process.env.PUBLIC_URL || 'http://127.0.0.1:8080';
 if (process.env.E2E_ALLOW_WRITES !== '1') {
   throw new Error('Set E2E_ALLOW_WRITES=1 hanya untuk database uji terpisah.');
 }
@@ -10,7 +11,7 @@ if (!['127.0.0.1', 'localhost'].includes(new URL(admin).hostname)) {
 }
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const { customerId } = JSON.parse(readFileSync(new URL('./.e2e-state.json', import.meta.url)));
+const { customerId, firstId } = JSON.parse(readFileSync(new URL('./.e2e-state.json', import.meta.url)));
 const browser = await chromium.launch({ headless: true });
 
 try {
@@ -41,6 +42,10 @@ try {
   await page.locator('#order-rows tr').first().waitFor();
   assert.ok(seen.some((entry) => entry.method === 'POST' && entry.instance === 'order-api-b' && entry.status === 201), JSON.stringify(seen));
   assert.ok(seen.some((entry) => entry.method === 'GET' && entry.instance === 'order-api-b' && entry.status === 200), JSON.stringify(seen));
+  const tracking = await fetch(`${publicUrl}/api/track?code=${encodeURIComponent(firstId)}`);
+  assert.equal(tracking.status, 200);
+  assert.equal(tracking.headers.get('x-instance-id'), 'order-api-b');
+  assert.equal((await tracking.json()).tracking.code, firstId);
   console.log('POS UI via B: create and read succeeded; X-Instance-ID order-api-b.');
 } finally {
   await browser.close();

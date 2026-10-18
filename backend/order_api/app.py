@@ -18,6 +18,10 @@ from backend.order_api.domain import calculate_items, payment_status, quantity_v
 
 ORDER_STATUSES = {'baru','diproses','selesai','diambil','dibatalkan'}
 PAYMENT_METHODS = {'tunai','transfer','qris'}
+PUBLIC_STATUS_LABELS = {
+    'baru': 'Antre', 'diproses': 'Diproses', 'selesai': 'Siap diambil',
+    'diambil': 'Selesai', 'dibatalkan': 'Dibatalkan',
+}
 JAKARTA = ZoneInfo('Asia/Jakarta')
 ORDER_SELECT = '''SELECT o.*, c.name AS customer_name,c.whatsapp AS customer_whatsapp,
                    COALESCE(p.paid_amount,0)::BIGINT AS paid_amount,
@@ -173,6 +177,26 @@ def create_app():
         with database() as conn:
             rows = conn.execute(ORDER_SELECT + ' ORDER BY o.ordered_at DESC LIMIT 100').fetchall()
         return jsonify(orders=[order_json(row) for row in rows])
+
+    @app.get('/api/track')
+    def public_tracking():
+        if set(request.args) != {'code'} or len(request.args.getlist('code')) != 1:
+            raise ApiError(400, 'Isi satu kode lacak order.')
+        order_id = uuid_value(request.args['code'], 'Kode lacak')
+        with database() as conn:
+            row = conn.execute('''SELECT id,status,expected_completed_at,updated_at
+                FROM ordering.orders WHERE id=%s''', (order_id,)).fetchone()
+        if row is None:
+            raise ApiError(404, 'Kode lacak tidak ditemukan. Periksa kode pada struk atau tanyakan outlet.')
+        result = jsonify(tracking={
+            'code': str(row['id']),
+            'status': row['status'],
+            'status_label': PUBLIC_STATUS_LABELS[row['status']],
+            'expected_completed_at': row['expected_completed_at'].isoformat(),
+            'updated_at': row['updated_at'].isoformat(),
+        })
+        result.headers['Cache-Control'] = 'no-store'
+        return result
 
     @app.post('/api/orders')
     def create_order():

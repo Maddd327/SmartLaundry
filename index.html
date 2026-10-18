@@ -25,7 +25,7 @@
         <nav class="main-nav" id="main-nav" aria-label="Navigasi utama">
           <a href="#layanan">Layanan</a><a href="#harga">Harga</a
           ><a href="#cara-kerja">Cara Kerja</a><a href="#tentang">Tentang</a
-          ><a href="#faq">FAQ</a><a href="#kontak">Kontak</a>
+          ><a href="#lacak">Lacak Order</a><a href="#faq">FAQ</a><a href="#kontak">Kontak</a>
         </nav>
         <a class="button button-small header-cta" href="#pesan"
           >Pesan Sekarang</a
@@ -397,6 +397,44 @@
         </div>
       </section>
 
+      <section class="tracking-section section-pad" id="lacak">
+        <div class="container tracking-grid">
+          <div class="tracking-intro">
+            <span class="section-kicker">Status cucian</span>
+            <h2>Cek progres<br />order Anda.</h2>
+            <p>
+              Masukkan kode lacak dari struk atau pesan pengelola untuk melihat
+              status pengerjaan dan perkiraan selesai terbaru.
+            </p>
+            <p class="tracking-note">
+              Kode baru tersedia setelah pengelola mencatat order. Mengirim pesan
+              WhatsApp dari form pemesanan belum membuat kode lacak.
+            </p>
+          </div>
+          <div class="tracking-card">
+            <form id="tracking-form" novalidate>
+              <div class="field">
+                <label for="tracking-code">Kode lacak order</label>
+                <input id="tracking-code" name="code" type="text" maxlength="36"
+                  autocomplete="off" spellcheck="false" required
+                  aria-describedby="tracking-help"
+                  placeholder="Contoh: 12345678-1234-1234-1234-123456789abc" />
+                <small id="tracking-help">Salin seluruh kode dari struk atau minta kepada pengelola.</small>
+              </div>
+              <button id="tracking-submit" type="submit" class="button button-full">Lihat status order</button>
+            </form>
+            <div id="tracking-state" class="api-state" role="status" aria-live="polite" hidden></div>
+            <div id="tracking-result" class="tracking-result" hidden>
+              <div><span>Kode lacak</span><strong id="tracking-result-code"></strong></div>
+              <div><span>Status pengerjaan</span><strong id="tracking-result-status"></strong></div>
+              <div><span>Perkiraan selesai</span><strong id="tracking-result-estimate"></strong></div>
+              <div><span>Terakhir diperbarui</span><strong id="tracking-result-updated"></strong></div>
+              <p>Perkiraan selesai dapat berubah. Hubungi outlet bila perlu memastikan jadwal pengambilan.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="section-pad faq-section" id="faq">
         <div class="container faq-grid">
           <div>
@@ -452,6 +490,15 @@
                 memproses pembayaran.
               </p>
             </details>
+            <details>
+              <summary>
+                Kapan saya mendapat kode untuk melacak cucian?<span aria-hidden="true">+</span>
+              </summary>
+              <p>
+                Pengelola memberi kode setelah order dicatat dan dikonfirmasi.
+                Masukkan kode tersebut di bagian Lacak Order untuk melihat status.
+              </p>
+            </details>
           </div>
         </div>
       </section>
@@ -487,7 +534,7 @@
         </div>
         <div class="footer-links">
           <a href="#layanan">Layanan</a><a href="#harga">Harga acuan</a
-          ><a href="#faq">FAQ</a><a href="#kontak">Kontak</a
+          ><a href="#lacak">Lacak Order</a><a href="#faq">FAQ</a><a href="#kontak">Kontak</a
           >
         </div>
         <span class="copyright">© 2026 Laundry Mr Andy.</span>

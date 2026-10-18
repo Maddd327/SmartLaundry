@@ -896,6 +896,73 @@ td {
   line-height: 1.6;
   text-align: center;
 }
+.tracking-section {
+  background: #f3f8fa;
+}
+.tracking-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 70px;
+  align-items: center;
+}
+.tracking-intro h2 {
+  font-size: clamp(38px, 3.8vw, 52px);
+  line-height: 1.14;
+  letter-spacing: -0.066em;
+  margin: 28px 0 20px;
+}
+.tracking-intro > p {
+  color: #557084;
+  line-height: 1.75;
+  max-width: 440px;
+}
+.tracking-intro .tracking-note {
+  color: #617482;
+  font-size: 13px;
+}
+.tracking-card {
+  min-width: 0;
+  padding: 34px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 16px 35px rgba(18, 54, 76, 0.045);
+}
+.tracking-card .button {
+  margin-top: 20px;
+}
+.tracking-card .api-state {
+  margin-top: 18px;
+}
+.tracking-result {
+  margin-top: 22px;
+  padding: 18px 20px;
+  border-radius: 11px;
+  background: #edf6fa;
+}
+.tracking-result > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid #dce5e9;
+  font-size: 13px;
+}
+.tracking-result span {
+  color: #607b8b;
+  flex: none;
+}
+.tracking-result strong {
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.tracking-result p {
+  margin: 14px 0 0;
+  color: #607b8b;
+  font-size: 12px;
+  line-height: 1.6;
+}
 .faq-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
@@ -1004,6 +1071,7 @@ td {
   }
   .prices-grid,
   .order-grid,
+  .tracking-grid,
   .faq-grid {
     gap: 45px;
   }
@@ -1062,6 +1130,7 @@ td {
   .prices-grid,
   .about-grid,
   .order-grid,
+  .tracking-grid,
   .faq-grid {
     grid-template-columns: 1fr;
   }
@@ -1180,6 +1249,7 @@ td {
   .prices-intro h2,
   .about-copy h2,
   .order-aside h2,
+  .tracking-intro h2,
   .faq-grid h2,
   .contact-inner h2 {
     font-size: clamp(34px, 9vw, 43px);
@@ -1211,6 +1281,17 @@ td {
   }
   .booking-card {
     padding: 22px;
+  }
+  .tracking-card {
+    padding: 22px;
+  }
+  .tracking-result > div {
+    display: block;
+  }
+  .tracking-result strong {
+    display: block;
+    text-align: left;
+    margin-top: 3px;
   }
   .form-grid {
     grid-template-columns: 1fr;
@@ -1974,6 +2055,7 @@ body.operasional-page button:disabled {
 }
 .receipt-row span:last-child {
   text-align: right;
+  overflow-wrap: anywhere;
 }
 .receipt-total {
   font-weight: 800;
@@ -2039,6 +2121,11 @@ body.operasional-page button:disabled {
 .dialog-detail span:last-child {
   text-align: right;
   font-weight: 700;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tracking-code {
+  overflow-wrap: anywhere;
 }
 .dialog-actions {
   display: flex;

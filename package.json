@@ -4,6 +4,7 @@
   "scripts": {
     "test:browser:public": "node tests/browser_public.mjs",
     "test:browser:admin": "node tests/browser_admin.mjs",
+    "test:browser:tracking": "node tests/browser_tracking.mjs",
     "test:browser:quality": "node tests/browser_quality.mjs && node tests/browser_states.mjs",
     "test:browser:failover": "node tests/browser_failover.mjs"
   },
