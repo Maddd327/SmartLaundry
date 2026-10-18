@@ -1,5 +1,7 @@
 # SmartLoundry — Laundry Mr Andy
 
+**Pratinjau GitHub Pages:** [maddd327.github.io/SmartLaundry](https://maddd327.github.io/SmartLaundry/). Link ini hanya menyajikan file statis; katalog, penyimpanan permintaan, dan pelacakan membutuhkan Flask serta PostgreSQL yang berjalan pada server. Untuk demo seluruh alur, gunakan Docker Compose seperti petunjuk di bawah.
+
 Proyek tugas cloud computing ini menampilkan website laundry dan panel operasional tanpa login. Frontend memakai HTML, CSS, dan JavaScript biasa. **Catalog API** mengelola layanan/harga; **Order API** mengelola pelanggan, order, item, pembayaran, pengeluaran, dan laporan. Keduanya adalah *microservice* karena memiliki tanggung jawab dan tabel sendiri; Order API mengambil harga dari Catalog API lewat HTTP, lalu menyimpan nama/harga sebagai snapshot item. **Order API A dan B adalah dua replika dari microservice yang sama**, dengan image/kode dan PostgreSQL yang sama. B melayani saat instance A berhenti.
 
 ## Arsitektur
