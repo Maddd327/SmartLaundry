@@ -1,7 +1,9 @@
--- Jalankan dengan CATALOG_DB_PASSWORD dan ORDER_DB_PASSWORD di environment psql.
+-- Jalankan dengan POSTGRES_PASSWORD, CATALOG_DB_PASSWORD, dan ORDER_DB_PASSWORD.
 -- Aman untuk data transaksi: CREATE IF NOT EXISTS dan seed ON CONFLICT DO NOTHING.
+\getenv admin_password POSTGRES_PASSWORD
 \getenv catalog_password CATALOG_DB_PASSWORD
 \getenv order_password ORDER_DB_PASSWORD
+ALTER ROLE postgres PASSWORD :'admin_password';
 SELECT format('CREATE ROLE catalog_app LOGIN PASSWORD %L', :'catalog_password')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'catalog_app') \gexec
 SELECT format('CREATE ROLE order_app LOGIN PASSWORD %L', :'order_password')

@@ -8,7 +8,7 @@
 
 ## Compose dan jaringan
 
-Dari akar proyek, jalankan `python3 scripts/setup_env.py` sekali sebelum `docker compose up --build -d`. Tiga password acak disimpan di `.env` lokal dengan izin pemilik saja; Compose meneruskannya melalui environment server. Jangan masukkan `.env` ke Git, image, HTML, atau JavaScript. Lima service yang terus berjalan ialah `db`, `catalog-api`, `order-api-a`, `order-api-b`, dan `web`; `db-migrate` adalah job sekali jalan. Hanya `web` memiliki pemetaan port host: `8080` publik dan `127.0.0.1:8081` admin. API serta database tetap di jaringan internal Compose. Nginx mengarahkan Order API ke A utama dan B cadangan. `GET /healthz` pada tiap API memeriksa tabel miliknya di database; healthcheck web juga memeriksa katalog publik dan daftar order melalui proxy. Respons Order API berisi `instance_id` dan header `X-Instance-ID` yang diteruskan Nginx. Healthcheck container tidak menggantikan failover pasif Nginx.
+Dari akar proyek, jalankan `python3 scripts/setup_env.py` sebelum `docker compose up --build -d`. Tiga password acak disimpan di `.env` lokal dengan izin pemilik saja. Pada `.env` lama, skrip menambah nama variabel `SMARTLAUNDRY_*` dengan nilai lama tanpa merotasi password. Nama khusus proyek mencegah variabel shell umum seperti `POSTGRES_PASSWORD` mengalahkan `.env`. Jangan masukkan `.env` ke Git, image, HTML, atau JavaScript. Lima service yang terus berjalan ialah `db`, `catalog-api`, `order-api-a`, `order-api-b`, dan `web`; `db-migrate` adalah job sekali jalan. Hanya `web` memiliki pemetaan port host: `8080` publik dan `127.0.0.1:8081` admin. API serta database tetap di jaringan internal Compose. Nginx mengarahkan Order API ke A utama dan B cadangan. `GET /healthz` pada tiap API memeriksa tabel miliknya di database; healthcheck web juga memeriksa katalog publik dan daftar order melalui proxy. Respons Order API berisi `instance_id` dan header `X-Instance-ID` yang diteruskan Nginx. Healthcheck container tidak menggantikan failover pasif Nginx.
 
 Nginx memblokir halaman POS dan API pengelola di port publik. Port publik membuka `GET /api/services`, `GET /api/track?code=<UUID>`, dan `POST /api/requests` untuk permintaan baru saja. Pelacakan hanya menampilkan status dan perkiraan selesai. Untuk melihat instance yang melayani melalui port admin:
 
@@ -16,7 +16,7 @@ Nginx memblokir halaman POS dan API pengelola di port publik. Port publik membuk
 curl -si http://127.0.0.1:8081/api/orders
 ```
 
-Migrasi `db/001_init.sql` dijalankan ketika volume PostgreSQL baru dibuat, lalu diulang oleh job `db-migrate` saat Compose naik agar volume lama juga diperbarui. Untuk menjalankannya manual:
+Migrasi `db/001_init.sql` dijalankan ketika volume PostgreSQL baru dibuat, lalu diulang oleh job `db-migrate` lewat soket Unix internal saat Compose naik agar volume lama juga diperbarui. SQL menyamakan password role `postgres`, `catalog_app`, dan `order_app` dengan `.env`. Untuk menjalankannya manual:
 
 ```bash
 docker compose exec -T db psql -U postgres -d laundry -v ON_ERROR_STOP=1 < db/001_init.sql
@@ -24,7 +24,7 @@ docker compose exec -T db psql -U postgres -d laundry -v ON_ERROR_STOP=1 < db/00
 
 SQL memakai `CREATE IF NOT EXISTS` dan seed `ON CONFLICT DO NOTHING`, sehingga tidak menimpa layanan yang sudah diubah atau transaksi yang tersimpan. Volume `pgdata` mempertahankan data ketika container aplikasi dimulai ulang.
 
-Jika memperbarui instalasi yang memiliki volume database dari versi lama dengan password contoh, jalankan migrasi ulang sebelum mengandalkan API. SQL ini juga menyamakan password role database dengan `.env` baru dan tidak menghapus transaksi. Gunakan `docker compose exec -T db psql -U postgres -d laundry -v ON_ERROR_STOP=1 < db/001_init.sql` setelah database hidup. Simpan password `.env` secara aman; menggantinya tanpa menjalankan migrasi role akan memutus koneksi API.
+Jika clone baru memakai volume database lama, jalankan `setup_env.py` lalu Compose seperti biasa. Job migrasi memakai soket internal untuk menyamakan password role dengan `.env` baru tanpa menghapus transaksi. Simpan `.env` secara aman agar tidak perlu mengganti password saat pindah mesin atau clone.
 
 ## Backup dan restore PostgreSQL
 
@@ -81,12 +81,10 @@ docker compose exec -T db psql -U postgres -d laundry_test -v ON_ERROR_STOP=1 < 
 Jalankan tes dari image API, tanpa membuka port database ke host. Variabel URL tes disiapkan di environment shell dan diteruskan ke container tanpa menuliskan password dalam argumen Docker:
 
 ```bash
-set -a
 . ./.env
-TEST_ADMIN_DATABASE_URL="postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/laundry_test"
-TEST_CATALOG_DATABASE_URL="postgresql://catalog_app:${CATALOG_DB_PASSWORD}@db:5432/laundry_test"
-TEST_ORDER_DATABASE_URL="postgresql://order_app:${ORDER_DB_PASSWORD}@db:5432/laundry_test"
-set +a
+export TEST_ADMIN_DATABASE_URL="postgresql://postgres:${SMARTLAUNDRY_POSTGRES_PASSWORD}@db:5432/laundry_test"
+export TEST_CATALOG_DATABASE_URL="postgresql://catalog_app:${SMARTLAUNDRY_CATALOG_DB_PASSWORD}@db:5432/laundry_test"
+export TEST_ORDER_DATABASE_URL="postgresql://order_app:${SMARTLAUNDRY_ORDER_DB_PASSWORD}@db:5432/laundry_test"
 docker compose run --rm -T --no-deps \
   -v "$PWD/tests:/app/tests:ro" \
   -e TEST_ADMIN_DATABASE_URL \

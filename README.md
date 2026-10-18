@@ -42,7 +42,7 @@ docker compose up --build -d
 docker compose ps
 ```
 
-`.env` berizin hanya untuk pemilik dan diabaikan Git serta build Docker. Simpan salinannya secara privat untuk pemulihan. Job `db-migrate` menerapkan perubahan skema pada volume lama saat Compose dijalankan; seed tidak menimpa transaksi.
+`.env` berizin hanya untuk pemilik dan diabaikan Git serta build Docker. Simpan salinannya secara privat untuk pemulihan. Jalankan `setup_env.py` lagi setelah memperbarui clone lama: skrip melengkapi nama variabel khusus proyek tanpa mengganti nilai lama. Job `db-migrate` memakai soket PostgreSQL internal untuk menyelaraskan password role dan menerapkan perubahan skema pada volume lama; seed tidak menimpa transaksi.
 
 | Halaman | URL pada mesin host |
 | --- | --- |

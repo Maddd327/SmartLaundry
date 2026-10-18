@@ -8,7 +8,7 @@ x-order-common: &order-common
   command: python -m backend.order_api.app
   environment: &order-env
     DATABASE_URL: postgresql://order_app@db:5432/laundry
-    PGPASSWORD: ${ORDER_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+    PGPASSWORD: ${SMARTLAUNDRY_ORDER_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
     CATALOG_API_URL: http://catalog-api:5001
     HOST: 0.0.0.0
     PORT: 5002
@@ -31,11 +31,12 @@ services:
     environment:
       POSTGRES_DB: laundry
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Jalankan python3 scripts/setup_env.py}
-      CATALOG_DB_PASSWORD: ${CATALOG_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
-      ORDER_DB_PASSWORD: ${ORDER_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+      POSTGRES_PASSWORD: ${SMARTLAUNDRY_POSTGRES_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+      CATALOG_DB_PASSWORD: ${SMARTLAUNDRY_CATALOG_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+      ORDER_DB_PASSWORD: ${SMARTLAUNDRY_ORDER_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - pgsocket:/var/run/postgresql
       - ./db/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d laundry"]
@@ -48,14 +49,15 @@ services:
   db-migrate:
     image: postgres:17-alpine
     environment:
-      PGHOST: db
+      PGHOST: /var/run/postgresql
       PGUSER: postgres
       PGDATABASE: laundry
-      PGPASSWORD: ${POSTGRES_PASSWORD:?Jalankan python3 scripts/setup_env.py}
-      CATALOG_DB_PASSWORD: ${CATALOG_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
-      ORDER_DB_PASSWORD: ${ORDER_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+      POSTGRES_PASSWORD: ${SMARTLAUNDRY_POSTGRES_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+      CATALOG_DB_PASSWORD: ${SMARTLAUNDRY_CATALOG_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+      ORDER_DB_PASSWORD: ${SMARTLAUNDRY_ORDER_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
     volumes:
       - ./db/001_init.sql:/migrations/001_init.sql:ro
+      - pgsocket:/var/run/postgresql
     command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/001_init.sql"]
     depends_on:
       db:
@@ -68,7 +70,7 @@ services:
     command: python -m backend.catalog_api.app
     environment:
       DATABASE_URL: postgresql://catalog_app@db:5432/laundry
-      PGPASSWORD: ${CATALOG_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
+      PGPASSWORD: ${SMARTLAUNDRY_CATALOG_DB_PASSWORD:?Jalankan python3 scripts/setup_env.py}
       HOST: 0.0.0.0
       PORT: 5001
     depends_on:
@@ -119,3 +121,4 @@ services:
 
 volumes:
   pgdata:
+  pgsocket:
