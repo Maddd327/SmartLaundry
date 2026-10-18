@@ -45,3 +45,20 @@ PDF struk juga dibuat dengan cetak browser Chromium; teks layanan, total Rp58.00
 Setelah proses PostgreSQL lokal dihentikan dan dijalankan lagi dengan direktori data yang sama, A dan B masing-masing tetap membaca ketiga order tersebut.
 
 **Batas pengujian:** alur dengan order nyata dan kode lacak valid diuji pada database tes terpisah melalui Nginx/Flask/PostgreSQL lokal. Failover container Compose diuji pada clone demo dengan permintaan baca dan validasi; database demo tidak diisi transaksi uji. Dialog cetak fisik dan pengiriman pesan WhatsApp tidak diuji: aplikasi hanya menyiapkan URL chat, dan pelanggan sendiri yang menekan kirim.
+
+## Hasil pemeriksaan 19 Oktober 2026 (permintaan pelanggan otomatis)
+
+Stack Compose uji terpisah memakai port `18080`/`18081` dan volume `smartlaundry_qa_pgdata`; stack demo pada `8080`/`8081` tidak diisi transaksi uji. Migrasi SQL berhasil pada volume demo yang sudah ada dan database uji baru.
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `docker compose config --quiet` | Lulus |
+| `pytest -q tests` terhadap `laundry_test` | Lulus, 14 tes; termasuk permintaan publik, snapshot harga, pelanggan, idempotensi serentak, dan larangan pembayaran sebelum konfirmasi |
+| `python3 scripts/check_gateway.py` pada port demo | Lulus; hanya `POST /api/requests` yang boleh menulis lewat port publik, API admin tetap ditolak |
+| `browser_public.mjs` | Lulus Chromium/Firefox/WebKit pada 320/768/1440 px; periksa lalu batalkan tidak menulis order |
+| `browser_admin.mjs`, `browser_tracking.mjs` | Lulus alur POS lengkap dan pelacakan kode dari database |
+| `browser_request.mjs` | Lulus: form publik menyimpan, kode/estimasi dari server, URL WhatsApp, pelanggan/order muncul otomatis di POS, pembayaran terkunci sebelum konfirmasi, status terlacak |
+| `browser_quality.mjs`, `browser_states.mjs` | Lulus Chromium/Firefox/WebKit pada 320/375/768/1440 px; tanpa overflow, label, fokus, loading, galat/retry |
+| Failover A → B pada stack uji | Lulus: setelah A dihentikan, `POST /api/requests` menghasilkan `201` dari `order-api-b`, pelacakan `200` dari B, dan admin membaca order yang sama dari B; setelah A hidup lagi, A membaca data yang sama |
+
+Pengiriman pesan WhatsApp dan printer fisik tetap tidak diuji: aplikasi membuka chat siap kirim dan memakai dialog cetak browser.

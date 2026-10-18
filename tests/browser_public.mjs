@@ -32,6 +32,7 @@ for (const [name,type] of [['Chromium',chromium],['Firefox',firefox],['WebKit',w
    await page.locator('#notes').fill('Putih + biru #1');
    await page.locator('#booking-form button[type=submit]').click();
    assert.ok(await page.locator('#review-dialog').evaluate(el=>el.open));
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth<=1), `${name} ${width}: review overflow`);
    for(const part of ['Ani & Budi','6281234567890','Cuci Setrika Regular','2,5 kg','Rp15.000','Putih + biru #1']) assert.ok((await page.locator('#review-details').innerText()).replace(/\s/g,'').includes(part.replace(/\s/g,'')),part);
    await page.locator('#review-back').click();
    await page.locator('#service').selectOption('express');

@@ -64,6 +64,9 @@ ALTER TABLE ordering.orders ADD COLUMN IF NOT EXISTS request_name TEXT;
 ALTER TABLE ordering.orders DROP CONSTRAINT IF EXISTS orders_status_check;
 ALTER TABLE ordering.orders ADD CONSTRAINT orders_status_check
   CHECK (status IN ('menunggu_konfirmasi','baru','diproses','selesai','diambil','dibatalkan'));
+ALTER TABLE ordering.orders DROP CONSTRAINT IF EXISTS orders_source_check;
+ALTER TABLE ordering.orders ADD CONSTRAINT orders_source_check
+  CHECK (source IN ('pos','website'));
 CREATE TABLE IF NOT EXISTS ordering.order_items (
   id UUID PRIMARY KEY,
   order_id UUID NOT NULL REFERENCES ordering.orders(id) ON DELETE CASCADE,

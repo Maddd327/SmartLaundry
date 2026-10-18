@@ -48,6 +48,7 @@ docker compose ps
 | POS admin | `http://127.0.0.1:8081/operasional.html` |
 
 Pengelola dari komputer lain perlu jaringan privat atau SSH tunnel ke port admin lokal. Tidak ada halaman login. Saat website pelanggan dipasang pada domain sebenarnya, gunakan **HTTPS** dengan domain/sertifikat deployment yang valid dan pastikan POS tetap di jaringan privat. Compose lokal ini hanya memakai HTTP.
+GitHub menyimpan kode proyek, bukan menjalankan Flask atau PostgreSQL. Agar pelanggan internet dapat menyimpan permintaan, stack ini harus dijalankan pada server yang dapat dijangkau publik untuk port website, sementara port admin tetap privat.
 
 ## Alur pelanggan dan transaksi
 

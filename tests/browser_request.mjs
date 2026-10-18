@@ -23,7 +23,7 @@ try {
   await page.locator('#review-confirm').click();
   await page.locator('#request-code').getByText(/^[0-9a-f-]{36}$/).waitFor();
   const code = await page.locator('#request-code').innerText();
-  assert.equal(await page.locator('#request-total').innerText(), 'Rp15.000');
+  assert.equal((await page.locator('#request-total').innerText()).replace(/\s/g, ''), 'Rp15.000');
   assert.equal(await page.locator('#request-status').innerText(), 'Menunggu konfirmasi');
   const wa = new URL(await page.locator('#request-whatsapp').getAttribute('href'));
   assert.equal(wa.pathname, '/628213194417');
@@ -33,8 +33,8 @@ try {
   }
   await page.locator('#tracking-form button[type=submit]').click();
   await page.locator('#tracking-result-status').getByText('Menunggu konfirmasi').waitFor();
-  await adminPage.locator('#order-rows').getByText('Pelanggan Website Uji').waitFor({ timeout: 25000 });
-  await adminPage.locator('#order-rows tr').filter({ hasText: 'Pelanggan Website Uji' }).locator('[data-order]').click();
+  await adminPage.locator('#order-rows tr').filter({ hasText: code.slice(0, 8) }).waitFor({ timeout: 25000 });
+  await adminPage.locator('#order-rows tr').filter({ hasText: code.slice(0, 8) }).locator('[data-order]').click();
   await adminPage.locator('#dialog-body').getByText(code).waitFor();
   assert.equal(await adminPage.locator('#payment-submit').isDisabled(), true);
   await adminPage.locator('#status-form button[type=submit]').click();
