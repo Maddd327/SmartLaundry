@@ -53,6 +53,7 @@ GitHub menyimpan kode proyek, bukan menjalankan Flask atau PostgreSQL. Agar pela
 ## Alur pelanggan dan transaksi
 
 Website publik membaca layanan aktif dan harga acuan dari `GET /api/services`. Pelanggan mengisi form, memeriksa rincian, lalu menekan **Simpan permintaan**. Browser memanggil `POST /api/requests`; Order API menormalisasi nomor, menghitung ulang harga dari Catalog API, serta menyimpan pelanggan, permintaan, dan item dalam satu transaksi. Server mengembalikan kode lacak UUID. Status awal **Menunggu konfirmasi**; pengelola melihatnya di POS dan mengubah status ke **Antre** setelah memeriksa rincian. Pembayaran baru dapat dicatat setelah konfirmasi. `client_request_id` mencegah retry membuat permintaan ganda. Pelanggan dapat membuka WhatsApp dengan rincian dan kode yang sudah terisi, tetapi **tetap harus menekan Kirim sendiri**. Menyimpan permintaan tidak membuktikan chat terkirim atau laundry diterima outlet. Harga serta jadwal akhir tetap perlu dikonfirmasi. Kode dapat dipakai di bagian **Lacak Order** untuk melihat status. POS juga dapat mencatat order langsung melalui `POST /api/orders`.
+Tanpa login atau verifikasi nomor, siapa pun dapat mengirim permintaan publik. Pengelola perlu memeriksa identitas dan rincian sebelum mengonfirmasi; status menunggu konfirmasi serta blokir pembayaran awal memang disediakan untuk langkah ini.
 
 ## Contoh API
 
