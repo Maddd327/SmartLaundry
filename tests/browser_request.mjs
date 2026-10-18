@@ -9,7 +9,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   const adminPage = await browser.newPage();
   await adminPage.goto(admin + '/operasional.html#orders');
-  await adminPage.locator('#order-rows').waitFor();
+  await adminPage.locator('#order-rows').waitFor({ state: 'attached' });
   const page = await browser.newPage({ viewport: { width: 375, height: 812 } });
   await page.goto(pub + '/');
   await page.locator('#service option').nth(2).waitFor({ state: 'attached' });
