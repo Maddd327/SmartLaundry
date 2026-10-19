@@ -62,3 +62,18 @@ Stack Compose uji terpisah memakai port `18080`/`18081` dan volume `smartlaundry
 | Failover A → B pada stack uji | Lulus: setelah A dihentikan, `POST /api/requests` menghasilkan `201` dari `order-api-b`, pelacakan `200` dari B, dan admin membaca order yang sama dari B; setelah A hidup lagi, A membaca data yang sama |
 
 Pengiriman pesan WhatsApp dan printer fisik tetap tidak diuji: aplikasi membuka chat siap kirim dan memakai dialog cetak browser.
+
+## Pemeriksaan konfigurasi Docker 19 Oktober 2026
+
+Log pengguna menunjukkan `db-migrate` gagal autentikasi saat variabel shell `POSTGRES_PASSWORD` mengalahkan `.env`. Sesudah nama variabel diganti menjadi `SMARTLAUNDRY_*` dan migrasi memakai soket internal:
+
+| Pemeriksaan | Hasil |
+| --- | --- |
+| `docker compose config --quiet` dan konfigurasi dengan tiga variabel password umum sengaja salah | Lulus; nilai Compose tetap berasal dari `.env` khusus proyek |
+| `pytest -q tests` terhadap PostgreSQL `laundry_test` | Lulus, 16 tes |
+| Compose pada volume demo lama dengan password tidak cocok | Lulus; `db-migrate` keluar 0 dan kelima container sehat, tanpa menghapus volume |
+| Compose pada volume QA baru | Lulus; seluruh API sehat dan permintaan browser tersimpan serta muncul di POS |
+| Ganti tiga password pada volume QA yang sudah berisi order, lalu jalankan Compose lagi | Lulus; migrasi menyelaraskan role dan order yang sama tetap terbaca melalui API |
+| Pemeriksaan batas port `scripts/check_gateway.py` | Lulus pada stack demo |
+
+Volume QA dibersihkan setelah tes. Volume transaksi demo tetap terpasang; backup sebelum perbaikan disimpan di `backups/pre-password-sync.dump` pada clone lokal dan diabaikan Git.
